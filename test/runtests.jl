@@ -1,7 +1,7 @@
 using CaratheodoryPruning
 using Test
 using Random: seed!
-using LinearAlgebra
+using LinearAlgebra: norm
 
 @testset "CaratheodoryPruning.jl" begin
     seed!(1)

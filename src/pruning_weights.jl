@@ -1,6 +1,6 @@
 function prune_weights_first!(w, kvecs, inds)
     # choose first kernel vector 
-    kvec = kvecs[1]
+    kvec = first(kvecs)
     if length(kvec) == length(w)
         kvec = view(kvec, inds)
     end

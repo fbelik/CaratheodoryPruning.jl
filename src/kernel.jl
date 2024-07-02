@@ -235,7 +235,7 @@ mutable struct CholeskyUpDowndater <: KernelDowndater
         elseif fullQR_forced == 1
             full_forced_inds = [floor(Int, (m+1)/2)]
         else
-            full_forced_inds = unique([floor(Int, i) for i in range(m, 1, fullQR_forced)])
+            full_forced_inds = unique([floor(Int, i) for i in range(m, 1, length=fullQR_forced)])
         end
         return new(V, Q, R, kvecs, D, x, ind_order, inds, ct, m, N, k, full_forced_inds, SM_tol)
     end
