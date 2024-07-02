@@ -6,15 +6,19 @@ function prune_weights_first!(w, kvecs, inds)
     end
     # for subtracting the kernel vector
     idp = findall(@. kvec > 0)
-    alphap, k0p = findmin(view(w, inds[idp]) ./ view(kvec, idp))
-    k0p = idp[k0p]
+    alphap = Inf
+    if length(idp) > 0
+        alphap = findmin(view(w, inds[idp]) ./ view(kvec, idp))[1]
+    end
 
     # for adding the kernel vector
     idn = findall(@. kvec < 0)
-    alphan, k0n = findmax(view(w, inds[idn]) ./ view(kvec, idn))
-    k0n = idn[k0n]
+    alphan = -Inf
+    if length(idn) > 0
+        alphan = findmax(view(w, inds[idn]) ./ view(kvec, idn))[1]
+    end
 
-    alpha, k0 = abs(alphan) < abs(alphap) ? (alphan, k0n) : (alphap, k0p)
+    alpha = abs(alphan) < abs(alphap) ? alphan : alphap
 
     @. w[inds] -= alpha * kvec
 end
@@ -29,15 +33,19 @@ function prune_weights_minabs!(w, kvecs, inds)
         end
         # for subtracting the kernel vector
         idp = findall(@. kvec > 0)
-        alphap, k0p = findmin(view(w, inds[idp]) ./ view(kvec, idp))
-        k0p = idp[k0p]
+        alphap = Inf
+        if length(idp) > 0
+            alphap = findmin(view(w, inds[idp]) ./ view(kvec, idp))[1]
+        end
 
         # for adding the kernel vector
         idn = findall(@. kvec < 0)
-        alphan, k0n = findmax(view(w, inds[idn]) ./ view(kvec, idn))
-        k0n = idn[k0n]
+        alphan = -Inf
+        if length(idn) > 0
+            alphan = findmax(view(w, inds[idn]) ./ view(kvec, idn))[1]
+        end
 
-        alpha, k0 = abs(alphan) < abs(alphap) ? (alphan, k0n) : (alphap, k0p)
+        alpha = abs(alphan) < abs(alphap) ? alphan : alphap
 
         if abs(alpha) < minabsalpha
             chosenkvec = kvec

@@ -11,7 +11,7 @@ using LinearAlgebra: norm
     tol = 1e-12
     @testset "Kernel choice $kernel" for kernel in (:FullQR, :GivensQR, :Cholesky, :CholeskyUpDown)
         for pruning in (:first, :minabs)
-            neww, inds = caratheodory_pruning(V, w, kernel=kernel, pruning=pruning)
+            neww, inds = caratheodory_pruning(V, w, kernel=kernel, pruning=pruning, k=5)
             @test norm(V'neww .- Vtw) <= tol
         end
     end

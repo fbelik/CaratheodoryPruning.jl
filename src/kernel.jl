@@ -78,6 +78,7 @@ function downdate!(gd::GivensQRDowndater, idx::Int)
     q = view(gd.Q, idx, inds)
     r = q[end]
     mididx = findfirst(==(idx), gd.inds)
+    # TODO: Can perhaps replace this step with an order M (instead of M²) Householder reflection, add as flag?
     for i in length(q):-1:(mididx+1)
         G, r = givens(q[i-1], r, i-1, i)
         rmul!(view(gd.Q,inds,inds), G')
@@ -100,9 +101,10 @@ mutable struct CholeskyDowndater <: KernelDowndater
     m::Int
     N::Int
     k::Int
+    full_Q::Bool
     full_forced_inds::AbstractVector{<:Int}
     SM_tol::Float64
-    function CholeskyDowndater(V::AbstractMatrix; k=1, pct_full_qr=5.0, SM_tol=1e-6)
+    function CholeskyDowndater(V::AbstractMatrix; k=1, pct_full_qr=5.0, SM_tol=1e-6, full_Q=false)
         M, N = size(V)
         m = M - N
         if k > m
@@ -132,14 +134,21 @@ mutable struct CholeskyDowndater <: KernelDowndater
                 full_forced_inds[i] = val
             end
         end
-        return new(V, Q, D, x, C, inds, ct, m, N, k, full_forced_inds, SM_tol)
+        return new(V, Q, D, x, C, inds, ct, m, N, k, full_Q, full_forced_inds, SM_tol)
     end
 end
 
 function get_kernel_vectors(cd::CholeskyDowndater)
     N = cd.N; k = cd.k
-    kvecs = view(cd.Q, cd.inds, 1:(N+k))  * view(cd.C, 1:(N+k), (N+1):(N+k))
-    return eachcol(kvecs)
+    if cd.full_Q
+        inds = cd.inds
+        startidx = N+1
+        kvecs = view(cd.Q, inds, startidx:(N+k))
+        return eachcol(kvecs)
+    else
+        kvecs = view(cd.Q, cd.inds, 1:(N+k))  * view(cd.C, 1:(N+k), (N+1):(N+k))
+        return eachcol(kvecs)
+    end
 end
 
 function downdate!(cd::CholeskyDowndater, idx::Int)
@@ -149,7 +158,11 @@ function downdate!(cd::CholeskyDowndater, idx::Int)
     cd.ct += 1
     
     x = cd.x; ct = cd.ct; N = cd.N; k = cd.k
-    x .= transpose(cd.C) * view(cd.Q, idx, 1:(N+k))
+    if cd.full_Q
+        x .= view(cd.Q, idx, 1:(N+k))
+    else
+        x .= transpose(cd.C) * view(cd.Q, idx, 1:(N+k))
+    end
     filter!(!=(idx), cd.inds)
     
     perform_fullQR = (length(cd.full_forced_inds) > 0 && ct == cd.full_forced_inds[end])
@@ -191,7 +204,11 @@ function downdate!(cd::CholeskyDowndater, idx::Int)
             lmul!(G, D)
         end
         LinvTnew = transpose(view(D, 1:(N+k), 1:(N+k)))
-        cd.C .= cd.C * LinvTnew
+        if cd.full_Q
+            cd.Q[cd.inds,1:(N+k)] .= view(cd.Q, cd.inds, 1:(N+k)) * LinvTnew
+        else
+            cd.C .= cd.C * LinvTnew
+        end
     end
 end
 
