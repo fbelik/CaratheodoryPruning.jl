@@ -44,7 +44,7 @@ end
 
 mutable struct GivensQRDowndater <: KernelDowndater
     V::AbstractMatrix
-    Q::Union{AbstractMatrix,QRCompactWYQ} # NEED TO FIX TO LA.QRCOMPACKWYQ
+    Q::Union{AbstractMatrix,QRCompactWYQ}
     inds::AbstractVector
     N::Int
     k::Int
@@ -78,7 +78,6 @@ function downdate!(gd::GivensQRDowndater, idx::Int)
     q = view(gd.Q, idx, inds)
     r = q[end]
     mididx = findfirst(==(idx), gd.inds)
-    # TODO: Can perhaps replace this step with an order M (instead of M²) Householder reflection, add as flag?
     for i in length(q):-1:(mididx+1)
         G, r = givens(q[i-1], r, i-1, i)
         rmul!(view(gd.Q,inds,inds), G')
@@ -252,7 +251,7 @@ mutable struct CholeskyUpDowndater <: KernelDowndater
         elseif fullQR_forced == 1
             full_forced_inds = [floor(Int, (m+1)/2)]
         else
-            full_forced_inds = unique([floor(Int, i) for i in range(m, 1, length=fullQR_forced)])
+            full_forced_inds = unique([floor(Int, i) for i in range(m, 1, length=fullQR_forced+1)[2:end]])
         end
         return new(V, Q, R, kvecs, D, x, ind_order, inds, ct, m, N, k, full_forced_inds, SM_tol)
     end
