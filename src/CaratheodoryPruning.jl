@@ -1,9 +1,7 @@
 module CaratheodoryPruning
 
 using LinearAlgebra: 
-    qr, I, givens, lmul!, rmul!, QRCompactWYQ, norm
-using Random:
-    randperm
+    qr, I, givens, lmul!, rmul!, QRCompactWYQ, norm, UpperTriangular
 
 include("kernel.jl")
 include("pruning_weights.jl")

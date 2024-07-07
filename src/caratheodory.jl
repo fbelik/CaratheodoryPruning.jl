@@ -1,4 +1,4 @@
-function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater, prune_weights!::Function, caratheodory_correction=false; return_errors=false, errnorm=norm)
+function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater, prune_weights!::Function, caratheodory_correction=false; zero_tol=1e-16, return_errors=false, errnorm=norm)
     
     if length(w_in) <= size(V, 2)
         return w_in, eachindex(w_in)
@@ -18,7 +18,7 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater, prune_
         kvecs = get_kernel_vectors(kernel_downdater)
         prune_weights!(w, kvecs, inds)
         # Find all zero weights
-        allzeros = findall(x -> abs(x) <= 1e-16, view(w, inds))
+        allzeros = findall(x -> abs(x) <= zero_tol, view(w, inds))
         for k0 in allzeros
             downdate!(kernel_downdater, inds[k0])
             deleteat!(inds, k0)
@@ -54,7 +54,7 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater, prune_
     end
 end
 
-function caratheodory_pruning(V, w_in; kernel=:CholeskyDowndater, pruning=:first, return_errors=false, errnorm=norm, caratheodory_correction=false, kernel_kwargs...)
+function caratheodory_pruning(V, w_in, caratheodory_correction=false; kernel=:CholeskyDowndater, pruning=:first, return_errors=false, errnorm=norm, zero_tol=1e-16, kernel_kwargs...)
     kernel_downdater = begin
         if kernel in (:FullQRDowndater, :FullQR)
             FullQRDowndater(V; kernel_kwargs...)
@@ -75,5 +75,5 @@ function caratheodory_pruning(V, w_in; kernel=:CholeskyDowndater, pruning=:first
             prune_weights_minabs!
         end
     end
-    return caratheodory_pruning(V, w_in, kernel_downdater, prune_weights!, return_errors=return_errors, errnorm=errnorm)
+    return caratheodory_pruning(V, w_in, kernel_downdater, prune_weights!, caratheodory_correction, return_errors=return_errors, errnorm=errnorm, zero_tol=zero_tol)
 end

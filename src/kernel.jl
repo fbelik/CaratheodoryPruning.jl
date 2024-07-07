@@ -226,7 +226,7 @@ mutable struct CholeskyUpDowndater <: KernelDowndater
     k::Int
     full_forced_inds::AbstractVector{<:Int}
     SM_tol::Float64
-    function CholeskyUpDowndater(V::AbstractMatrix; ind_order=randperm(size(V,1)), k=1, pct_full_qr=20.0, SM_tol=1e-6)
+    function CholeskyUpDowndater(V::AbstractMatrix; ind_order=1:(size(V,1)), k=1, pct_full_qr=20.0, SM_tol=1e-6)
         M, N = size(V)
         m = M - N
         if k > m
@@ -235,9 +235,9 @@ mutable struct CholeskyUpDowndater <: KernelDowndater
         ct = 1
         # Allocate arrays
         ind_order = collect(ind_order)
-        inds = ind_order[1:(N+k)]
+        inds = ind_order[1:(N+k+1)]
         Q,R = qr(view(V, inds, 1:N))
-        Q = Q[1:(N+k),1:(N+k)]
+        Q = Q[1:(N+k+1),1:(N+k)]
         R = vcat(R, zeros(k, N))
         D = zeros(Float64, N+k+1, N+k)
         kvecs = [zeros(M) for _ in 1:k]
@@ -281,21 +281,31 @@ function downdate!(cud::CholeskyUpDowndater, idx::Int)
     x .= view(cud.Q, pruneidx, 1:(N+k))
     
     perform_fullQR = (length(cud.full_forced_inds) > 0 && ct == cud.full_forced_inds[end])
-    update = true
 
-    if k == (m - ct + 1) # k + N + ct == M + 1, no more vectors to choose from
-        # Reduce number of kernel vectors formed
-        cud.k = m - ct
-        k = cud.k
-        perform_fullQR = true
-        # Resize matrices
-        cud.Q = view(cud.Q, 1:(N+k), 1:(N+k))
-        cud.R = view(cud.R, 1:(N+k), 1:N)
-        cud.D = zeros(Float64, N+k+1, N+k)
-        cud.x = zeros(Float64, N+k)
-        deleteat!(cud.inds, pruneidx)
+    if k == (m - ct) # k + N + ct + 1 == M + 1, no more vectors to choose from
+        if k == 1
+            # Perform final QR, keep k at 1
+            perform_fullQR = true
+            # Resize matrices
+            cud.Q = view(cud.Q, 1:(N+k), 1:(N+k))
+            cud.R = view(cud.R, 1:(N+k), 1:N)
+            cud.D = view(cud.D, 1:(N+k+1), (1:N+k))
+            cud.x = view(cud.x, 1:(N+k))
+            deleteat!(cud.inds, pruneidx)
+        else
+            # Reduce number of kernel vectors formed
+            cud.k = m - ct - 1
+            k = cud.k
+            perform_fullQR = true
+            # Resize matrices
+            cud.Q = view(cud.Q, 1:(N+k+1), 1:(N+k))
+            cud.R = view(cud.R, 1:(N+k), 1:N)
+            cud.D = view(cud.D, 1:(N+k+1), (1:N+k))
+            cud.x = view(cud.x, 1:(N+k))
+            deleteat!(cud.inds, pruneidx)
+        end
     else
-        cud.inds[pruneidx] = cud.ind_order[ct+N+k]
+        cud.inds[pruneidx] = cud.ind_order[ct+N+k+1]
         SM_sqrt_denom = 1 - x'x
         if (SM_sqrt_denom <= cud.SM_tol)
             perform_fullQR = true
@@ -322,20 +332,21 @@ function downdate!(cud::CholeskyUpDowndater, idx::Int)
             G, r = givens(1.0, D[N+k+1,i], i, N+k+1)
             lmul!(G, D)
         end
-        LinvTnew = transpose(view(D, 1:(N+k), 1:(N+k)))
+        LinvTnew = UpperTriangular(transpose(view(D, 1:(N+k), 1:(N+k))))
         cud.Q[eachindex(inds), 1:(N+k)] .= cud.Q[eachindex(inds), 1:(N+k)] * LinvTnew
-        cud.R[1:(N+k), 1:N] .= LinvTnew \ cud.R
-        # Cholesky update
+        cud.R[1:(N+k), 1:N] .= transpose(transpose(cud.R) / transpose(LinvTnew))# Instead of LinvTnew \ cud.R, saves significant run-dispatch time
+        # Cholesky update 
         newrow = view(cud.V, inds[pruneidx], 1:N)
-        x .= transpose(cud.R) \ newrow
+        x[1:N] .= transpose(UpperTriangular(view(cud.R, 1:N, 1:N))) \ newrow
+        x[N+1:N+k] .= 0.0
         cud.Q[pruneidx, 1:(N+k)] .= x
         D[1:(N+k),1:(N+k)] .= Matrix(I, (N+k,N+k))
         D[N+k+1,1:(N+k)] .= x
-        for i in 1:(N+k)
+        for i in 1:N
             G, r = givens(1.0, D[N+k+1,i], i, N+k+1)
             lmul!(G, D)
         end
-        LTnew = view(D, 1:(N+k), 1:(N+k))
+        LTnew = UpperTriangular(view(D, 1:(N+k), 1:(N+k)))
         cud.Q[eachindex(inds), 1:(N+k)] .= cud.Q[eachindex(inds), 1:(N+k)] / LTnew
         cud.R .= LTnew * cud.R
     end
