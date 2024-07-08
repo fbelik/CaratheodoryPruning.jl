@@ -356,7 +356,14 @@ function downdate!(cud::CholeskyUpDowndater, idx::Int)
         end
         LinvTnew = UpperTriangular(transpose(view(D, 1:(N+k), 1:(N+k))))
         rmul!(view(cud.Q,eachindex(inds), 1:(N+k)), LinvTnew)
-        rdiv!(transpose(cud.R), transpose(LinvTnew))# Instead of ldiv!(LinvTnew, cud.R), saves significant run-dispatch time
+        # TODO: Keep this or require Julia 1.9+ ?
+        if (VERSION.major == 1) && (VERSION.minor <= 8)
+            ldiv!(LinvTnew, cud.R)
+        else
+            # Instead of ldiv!(LinvTnew, cud.R), saves significant run-dispatch time
+            # Only seems to work for julia 1.9+ due to rdiv! requiring StridedMatrix
+            rdiv!(transpose(cud.R), transpose(LinvTnew)) 
+        end
         # Cholesky update 
         newrow = view(cud.V, inds[pruneidx], 1:N)
         x[1:N] .= transpose(UpperTriangular(view(cud.R, 1:N, 1:N))) \ newrow

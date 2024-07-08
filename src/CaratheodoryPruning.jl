@@ -1,7 +1,7 @@
 module CaratheodoryPruning
 
 using LinearAlgebra: 
-    qr, I, givens, lmul!, rmul!, rdiv!, QRCompactWYQ, norm, UpperTriangular
+    qr, I, givens, lmul!, rmul!, ldiv!, rdiv!, QRCompactWYQ, norm, UpperTriangular
 using ProgressBars
 
 include("kernel.jl")
