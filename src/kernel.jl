@@ -1,7 +1,10 @@
 abstract type KernelDowndater end
 
 # Required methods for KernelDowndater objects
-function get_kernel_vectors(kd::KernelDowndater) :: AbstractVector
+function get_inds(kd::KernelDowndater)
+    error("Must implement inds for KernelDowndater")
+end
+function get_kernel_vectors(kd::KernelDowndater)
     error("Must implement get_kernel_vectors for KernelDowndater")
 end
 function downdate!(kd::KernelDowndater, idx::Int) 
@@ -27,9 +30,14 @@ mutable struct FullQRDowndater <: KernelDowndater
     end
 end
 
+function get_inds(fd::FullQRDowndater)
+    return fd.inds
+end
+
 function get_kernel_vectors(fd::FullQRDowndater)
     startidx = max(size(fd.Q, 2)-fd.k+1, fd.N+1)
-    return eachcol(fd.Q[:, startidx:size(fd.Q, 2)])
+    kvecs = eachcol(fd.Q[:, startidx:size(fd.Q, 2)])
+    return kvecs
 end
 
 function downdate!(fd::FullQRDowndater, idx::Int)
@@ -63,10 +71,15 @@ mutable struct GivensQRDowndater <: KernelDowndater
     end
 end
 
+function get_inds(gd::GivensQRDowndater)
+    return gd.inds
+end
+
 function get_kernel_vectors(gd::GivensQRDowndater)
     inds = gd.inds
     startidx = max(length(inds)-gd.k+1, gd.N+1)
-    return eachcol(view(gd.Q, inds, view(inds, startidx:length(inds))))
+    kvecs = eachcol(view(gd.Q, inds, view(inds, startidx:length(inds))))
+    return kvecs
 end
 
 function downdate!(gd::GivensQRDowndater, idx::Int)
@@ -137,16 +150,20 @@ mutable struct CholeskyDowndater <: KernelDowndater
     end
 end
 
+function get_inds(cd::CholeskyDowndater)
+    return cd.inds
+end
+
 function get_kernel_vectors(cd::CholeskyDowndater)
     N = cd.N; k = cd.k
     if cd.full_Q
         inds = cd.inds
         startidx = N+1
-        kvecs = view(cd.Q, inds, startidx:(N+k))
-        return eachcol(kvecs)
+        kvecs = eachcol(view(cd.Q, inds, startidx:(N+k)))
+        return kvecs
     else
-        kvecs = view(cd.Q, cd.inds, 1:(N+k))  * view(cd.C, 1:(N+k), (N+1):(N+k))
-        return eachcol(kvecs)
+        kvecs = eachcol(view(cd.Q, cd.inds, 1:(N+k))  * view(cd.C, 1:(N+k), (N+1):(N+k)))
+        return kvecs
     end
 end
 
@@ -226,7 +243,7 @@ mutable struct CholeskyUpDowndater <: KernelDowndater
     k::Int
     full_forced_inds::AbstractVector{<:Int}
     SM_tol::Float64
-    function CholeskyUpDowndater(V::AbstractMatrix; ind_order=1:(size(V,1)), k=1, pct_full_qr=20.0, SM_tol=1e-6)
+    function CholeskyUpDowndater(V::AbstractMatrix; ind_order=1:(size(V,1)), k=1, pct_full_qr=50.0, SM_tol=1e-6)
         M, N = size(V)
         m = M - N
         if k > m
@@ -257,6 +274,10 @@ mutable struct CholeskyUpDowndater <: KernelDowndater
     end
 end
 
+function get_inds(cud::CholeskyUpDowndater)
+    return cud.inds
+end
+
 function get_kernel_vectors(cud::CholeskyUpDowndater)
     N = cud.N; k = cud.k
     kvecs = view(cud.Q, :, (N+1):(N+k))
@@ -267,7 +288,8 @@ function get_kernel_vectors(cud::CholeskyUpDowndater)
             cud.kvecs[i][inner_idx] = kvecs[j, i]
         end
     end
-    return view(cud.kvecs, 1:cud.k)
+    kvecs = view(cud.kvecs, 1:cud.k)
+    return kvecs
 end
 
 function downdate!(cud::CholeskyUpDowndater, idx::Int)
@@ -333,8 +355,8 @@ function downdate!(cud::CholeskyUpDowndater, idx::Int)
             lmul!(G, D)
         end
         LinvTnew = UpperTriangular(transpose(view(D, 1:(N+k), 1:(N+k))))
-        cud.Q[eachindex(inds), 1:(N+k)] .= cud.Q[eachindex(inds), 1:(N+k)] * LinvTnew
-        cud.R[1:(N+k), 1:N] .= transpose(transpose(cud.R) / transpose(LinvTnew))# Instead of LinvTnew \ cud.R, saves significant run-dispatch time
+        rmul!(view(cud.Q,eachindex(inds), 1:(N+k)), LinvTnew)
+        rdiv!(transpose(cud.R), transpose(LinvTnew))# Instead of ldiv!(LinvTnew, cud.R), saves significant run-dispatch time
         # Cholesky update 
         newrow = view(cud.V, inds[pruneidx], 1:N)
         x[1:N] .= transpose(UpperTriangular(view(cud.R, 1:N, 1:N))) \ newrow
@@ -347,8 +369,8 @@ function downdate!(cud::CholeskyUpDowndater, idx::Int)
             lmul!(G, D)
         end
         LTnew = UpperTriangular(view(D, 1:(N+k), 1:(N+k)))
-        cud.Q[eachindex(inds), 1:(N+k)] .= cud.Q[eachindex(inds), 1:(N+k)] / LTnew
-        cud.R .= LTnew * cud.R
+        rdiv!(view(cud.Q,eachindex(inds), 1:(N+k)), LTnew)
+        lmul!(LTnew, cud.R)
     end
     cud.ct += 1
 end
