@@ -114,19 +114,12 @@ Helper method for calling the base `caratheodory_pruning` method.
 Takes in a symbol for `kernel`, and forms a `KernelDowndater` object depending
 on what is passed in. Also passes additional kwargs into the `KernelDowndater`:
 
-(:FullQRDowndater, :FullQR) -> FullQRDowndater(V; kernel_kwargs...)
-(:GivensDowndater, :Givens) -> GivensDowndater(V; kernel_kwargs...)
-(:CholeskyDowndater, :Cholesky) -> CholeskyDowndater(V; kernel_kwargs...)
-(:FullQRUpDowndater, :FullQRUpDown) -> FullQRUpDowndater(V; kernel_kwargs...)
-(:GivensUpDowndater, :GivensUpDown) -> GivensUpDowndater(V; kernel_kwargs...)
-else -> error("Unrecognized kernel choice")
+Options include `:FullQRDowndater` or `:FullQR`, `:GivensDowndater` or `:Givens`,
+`:CholeskyDowndater` or `:Cholesky`, `:FullQRUpDowndater` or `:FullQRUpDown`,
+and `:GivensUpDownDater` or `:GivensUpDown`.
 
 Takes in a symbol for `pruning`, and chooses a pruning method depending
-on what is passed in:
-
-:first -> prune_weights_first!
-:minabs -> prune_weights_minabs!
-else -> error("Unrecognized pruning choice")
+on what is passed in. Options are `:first` or `:minabs`.
 
 See the other `caratheodory_pruning` docstring for info on other arguments.
 """

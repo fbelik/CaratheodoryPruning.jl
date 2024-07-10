@@ -1,3 +1,12 @@
+"""
+`abstract type KernelDowndater`
+
+Abstract type for computing and storing kernel vectors
+of a matrix `V` with rows that are iteratively pruned.
+
+Must implement the methods `get_inds`, `get_kernel_vectors`,
+and `downdate!`.
+"""
 abstract type KernelDowndater end
 
 # Required methods for KernelDowndater objects
@@ -43,7 +52,7 @@ function downdate!(kd::KernelDowndater, idx::Int)
 end
 
 """
-`FullQRDowndater`
+`FullQRDowndater <: KernelDowndater`
 
 A mutable struct to hold the `Q`-factor of the QR decomposition
 of the matrix `V[inds,:]` for generating vectors in the kernel 
@@ -93,7 +102,7 @@ function downdate!(kd::FullQRDowndater, idx::Int)
 end
 
 """
-`GivensDowndater`
+`GivensDowndater <: KernelDowndater`
 
 A mutable struct to hold the `Q`-factor of the QR decomposition
 of the matrix `V[inds,:]` for generating vectors in the kernel 
@@ -157,7 +166,7 @@ function downdate!(kd::GivensDowndater, idx::Int)
 end
 
 """
-`CholeskyDowndater`
+`CholeskyDowndater <: KernelDowndater`
 
 A mutable struct to hold the `Q`-factor of the QR decomposition
 of the matrix `V[inds,:]` for generating vectors in the kernel 
@@ -303,7 +312,7 @@ function downdate!(kd::CholeskyDowndater, idx::Int)
 end
 
 """
-`FullQRUpDowndater`
+`FullQRUpDowndater <: KernelDowndater`
 
 A mutable struct to hold the QR decomposition of the matrix `V[inds,:]` 
 for generating vectors in the kernel of its transpose. Only acts on 
@@ -375,7 +384,7 @@ function downdate!(kd::FullQRUpDowndater, idx::Int)
 end
 
 """
-`GivensUpDowndater`
+`GivensUpDowndater <: KernelDowndater`
 
 A mutable struct to hold the QR decomposition of the matrix `V[inds,:]` 
 for generating vectors in the kernel of its transpose. Only acts on 
