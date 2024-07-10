@@ -11,5 +11,9 @@ makedocs(
     ],
     checkdocs = :none,
     format = Documenter.HTML(prettyurls = false),
-    #repo = Remotes.GitHub("fbelik", "CaratheodoryPruning.jl")
+    repo = Remotes.GitHub("fbelik", "CaratheodoryPruning.jl")
+)
+
+deploydocs(
+    repo = "github.com/fbelik/CaratheodoryPruning.jl.git",
 )
