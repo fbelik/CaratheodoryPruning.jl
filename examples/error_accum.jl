@@ -20,7 +20,9 @@ opts = (FullQR = Dict(:kernel => :FullQR),
         Cholesky_05pctQR = Dict(:kernel => :Cholesky, :pct_full_qr => 5.0),
         Cholesky_10pctQR = Dict(:kernel => :Cholesky, :pct_full_qr => 10.0),
         FullQRUpDown = Dict(:kernel => :FullQRUpDown),
-        GivensUpDown = Dict(:kernel => :GivensUpDown)
+        GivensUpDown_00pctQR = Dict(:kernel => :GivensUpDown, :pct_full_qr => 0.0),
+        GivensUpDown_01pctQR = Dict(:kernel => :GivensUpDown, :pct_full_qr => 1.0),
+        GivensUpDown_02pctQR = Dict(:kernel => :GivensUpDown, :pct_full_qr => 2.0)
 )
 
 Ns = 2:5 # Uncomment for shorter runtime

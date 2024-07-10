@@ -386,6 +386,8 @@ complete the down and update. Takes `O((N+k)²)` flops.
 Form with `GivensUpDowndater(V[; ind_order=1:(size(V,1)), k=1])`.
 `ind_order` is the order in which the indices are added. `k` is the 
 (maximum) number of kernel vectors returned each time `get_kernel_vectors` is called. 
+`pct_full_qr` is the percent of times, linearly spaced, that full QR
+factorizations are performed to prevent accumulation error in `Q`.
 """
 mutable struct GivensUpDowndater <: KernelDowndater
     V::AbstractMatrix
@@ -397,7 +399,8 @@ mutable struct GivensUpDowndater <: KernelDowndater
     m::Int
     N::Int
     k::Int
-    function GivensUpDowndater(V::AbstractMatrix; ind_order=randperm(size(V,1)), k=1)
+    full_forced_inds::AbstractVector{<:Int}
+    function GivensUpDowndater(V::AbstractMatrix; ind_order=randperm(size(V,1)), k=1, pct_full_qr=2.0)
         M, N = size(V)
         m = M - N
         if k > m
@@ -410,7 +413,12 @@ mutable struct GivensUpDowndater <: KernelDowndater
         Q,R = qr(view(V, inds, 1:N))
         Q = Q[1:(N+k),1:(N+k)]
         R = vcat(R, zeros(k, N))
-        return new(V, Q, R, ind_order, inds, ct, m, N, k)
+        # Full QR forced indices (uniform)
+        @assert (0.0 <= pct_full_qr <= 100.0)
+        fullQR_forced = floor(Int, m * pct_full_qr / 100)
+        # Perhaps change this
+        full_forced_inds = unique([floor(Int, i) for i in range(m+1, 1, length=fullQR_forced+2)[2:fullQR_forced+1]]) 
+        return new(V, Q, R, ind_order, inds, ct, m, N, k, full_forced_inds)
     end
 end
 
@@ -435,43 +443,65 @@ function downdate!(kd::GivensUpDowndater, idx::Int)
     N = kd.N; k = kd.k; ct = kd.ct; m = kd.m
     inds = kd.inds
 
-    # Givens downdate
-    q = view(kd.Q, pruneidx, 1:(N+k))
-    r = q[N+k]
-    for i in (N+k):-1:(pruneidx+1)
-        G, r = givens(q[i-1], r, i-1, i)
-        rmul!(kd.Q, G')
-        lmul!(G, kd.R)
-    end
-    for i in (pruneidx-1):-1:1
-        G, r = givens(r, q[i], pruneidx, i)
-        rmul!(kd.Q, G')
-        lmul!(G, kd.R)
-    end
+    perform_fullQR = (length(kd.full_forced_inds) > 0 && ct == kd.full_forced_inds[end])
 
-    if k == (m - ct + 1)
-        # Reduce number of kernel vectors formed
-        if kd.k > 1
-            kd.k -= 1
-            deleteat!(inds, pruneidx)
-            newinds = [1:pruneidx-1 ; pruneidx+1:(N+k)]
-            kd.Q = view(kd.Q, newinds, newinds)
+    if perform_fullQR
+        pop!(kd.full_forced_inds)
+        if k == (m - ct + 1)
+            # Reduce number of kernel vectors formed
+            if kd.k > 1
+                kd.k -= 1
+                deleteat!(inds, pruneidx)
+                kd.Q = view(kd.Q, 1:(N+k-1), 1:(N+k-1))
+            end
+            newQ, newR = qr(view(kd.V,inds, 1:N))
+            kd.Q .= newQ[1:(N+k-1), 1:(N+k-1)]
+        else
+            inds[pruneidx] = kd.ind_order[k + N + ct]
+            # Full QR update and downdate
+            newQ, newR = qr(view(kd.V,inds, 1:N))
+            kd.Q .= newQ[1:(N+k), 1:(N+k)]
+            kd.R[1:N, 1:N] .= newR
         end
     else
-        inds[pruneidx] = kd.ind_order[k + N + ct]
-        # Givens update
-        newrow = view(kd.V, inds[pruneidx], 1:N)
-        kd.Q[pruneidx, pruneidx] = 1.0
-        kd.R[pruneidx, :] .= newrow
-        for i in 1:min(pruneidx-1, N)
-            G, r = givens(kd.R[i,i], kd.R[pruneidx,i], i, pruneidx)
+        # Givens downdate
+        q = view(kd.Q, pruneidx, 1:(N+k))
+        r = q[N+k]
+        for i in (N+k):-1:(pruneidx+1)
+            G, r = givens(q[i-1], r, i-1, i)
             rmul!(kd.Q, G')
             lmul!(G, kd.R)
         end
-        for i in pruneidx:N
-            G, r = givens(kd.R[i,i], kd.R[i+1,i], i, i+1)
+        for i in (pruneidx-1):-1:1
+            G, r = givens(r, q[i], pruneidx, i)
             rmul!(kd.Q, G')
             lmul!(G, kd.R)
+        end
+
+        if k == (m - ct + 1)
+            # Reduce number of kernel vectors formed
+            if kd.k > 1
+                kd.k -= 1
+                deleteat!(inds, pruneidx)
+                newinds = [1:pruneidx-1 ; pruneidx+1:(N+k)]
+                kd.Q = view(kd.Q, newinds, newinds)
+            end
+        else
+            inds[pruneidx] = kd.ind_order[k + N + ct]
+            # Givens update
+            newrow = view(kd.V, inds[pruneidx], 1:N)
+            kd.Q[pruneidx, pruneidx] = 1.0
+            kd.R[pruneidx, :] .= newrow
+            for i in 1:min(pruneidx-1, N)
+                G, r = givens(kd.R[i,i], kd.R[pruneidx,i], i, pruneidx)
+                rmul!(kd.Q, G')
+                lmul!(G, kd.R)
+            end
+            for i in pruneidx:N
+                G, r = givens(kd.R[i,i], kd.R[i+1,i], i, i+1)
+                rmul!(kd.Q, G')
+                lmul!(G, kd.R)
+            end
         end
     end
     kd.ct += 1
