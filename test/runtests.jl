@@ -9,10 +9,15 @@ using LinearAlgebra: norm
     w = rand(size(V, 1))
     Vtw = V'w
     tol = 1e-12
-    @testset "Kernel choice $kernel" for kernel in (:FullQR, :GivensQR, :Cholesky, :CholeskyUpDown)
+    @testset "Kernel choice $kernel" for kernel in (:FullQR, :Givens, :Cholesky, :FullQRUpDown, :GivensUpDown)
         for pruning in (:first, :minabs)
-            neww, inds = caratheodory_pruning(V, w, kernel=kernel, pruning=pruning, k=5)
-            @test norm(V'neww .- Vtw) <= tol
+            for caratheodory_correction in (true,false)
+                for k in (1,5)
+                    neww, inds = caratheodory_pruning(V, w, kernel=kernel, pruning=pruning, 
+                        caratheodory_correction=caratheodory_correction, k=k)
+                    @test norm(V'neww .- Vtw) <= tol
+                end
+            end
         end
     end
 end
