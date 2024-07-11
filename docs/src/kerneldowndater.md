@@ -10,7 +10,7 @@ The reason we are interested in forming kernel vectors is that then, we can upda
 ```
 where ``\alpha`` is a constant chosen to zero out one of the weights while keeping all others nonnegative. We then update the ``S``-indices of ``w`` as ``w_{S} = w_{S} + \alpha q``.
 
-However, in Caratheodory pruning, at each step, ``S`` is typically only changed by removing (or sometimes adding) a few elements at a time.
+However, in Carathéodory pruning, at each step, ``S`` is typically only changed by removing (or sometimes adding) a few elements at a time.
 Thus, it can be wasteful to fully recompute the QR decomposition at each step. 
 
 `CaratheodoryPruning.jl` comes with several built-in Downdater options. They can be easily used by calling `caratheodory_pruning(V, w_in, kernel=:KERNEL)`, replacing `:KERNEL` with the appropriate symbol. 

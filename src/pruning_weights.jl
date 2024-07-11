@@ -6,8 +6,8 @@ vector `kvec`, and a vector of indices, `inds`, returns a 4-tuple,
 `(alphan, k0n, alphap, k0p)` used for pruning. `alphan` is the most
 negative multiple allowed such that `w = w + alphan * kvec` still has
 nonnegative entries, and equals zero at `k0n`. Similarly, `alphap` is
-the most positive multiple allowed such that `w = w + alphan * kvec` 
-still has nonnegative entries, and equals zero at `k0n`.
+the most positive multiple allowed such that `w = w + alphap * kvec` 
+still has nonnegative entries, and equals zero at `k0p`.
 """
 function get_alpha_k0s(w, kvec, inds)
     alphap = Inf
