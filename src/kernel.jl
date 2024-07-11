@@ -138,8 +138,8 @@ function get_inds(kd::GivensDowndater)
 end
 
 function get_kernel_vectors(kd::GivensDowndater)
-    inds = kd.inds
-    startidx = max(length(inds)-kd.k+1, kd.N+1)
+    inds = kd.inds; k = kd.k; N = kd.N
+    startidx = max(length(inds)-k+1, N+1)
     kvecs = eachcol(view(kd.Q, inds, view(inds, startidx:length(inds))))
     return kvecs
 end
@@ -147,21 +147,12 @@ end
 function downdate!(kd::GivensDowndater, idx::Int)
     inds = kd.inds
     mididx = findfirst(==(idx), kd.inds)
-    if length(inds) == (size(kd.V, 2) + 1)
+    if length(inds) == (kd.N + 1)
         # Don't need to update anymore
         deleteat!(inds, mididx)
         return
     end
-    q = view(kd.Q, idx, inds)
-    r = q[end]
-    for i in length(q):-1:(mididx+1)
-        G, r = givens(q[i-1], r, i-1, i)
-        rmul!(view(kd.Q,inds,inds), G')
-    end
-    for i in (mididx-1):-1:1
-        G, r = givens(r, q[i], mididx, i)
-        rmul!(view(kd.Q,inds,inds), G')
-    end
+    givens_qr_row_downdate!(view(kd.Q, inds, inds), mididx)
     deleteat!(inds, mididx)
 end
 
@@ -256,19 +247,14 @@ function downdate!(kd::CholeskyDowndater, idx::Int)
         return # No need to downdate anymore
     end
     kd.ct += 1
-    
-    x = kd.x; ct = kd.ct; N = kd.N; k = kd.k
-    if kd.full_Q
-        x .= view(kd.Q, idx, 1:(N+k))
-    else
-        x .= transpose(kd.C) * view(kd.Q, idx, 1:(N+k))
-    end
+
+    x = kd.x; ct = kd.ct; N = kd.N; k = kd.k; m = kd.m
     
     perform_fullQR = (length(kd.full_forced_inds) > 0 && ct == kd.full_forced_inds[end])
 
-    if kd.k > (kd.m - (kd.ct - 1))
+    if k > (m - ct + 1)
         # Reduce number of kernel vectors formed
-        kd.k = (kd.m - (kd.ct - 1))
+        kd.k = m - ct + 1
         k = kd.k
         perform_fullQR = true
         # Resize matrices
@@ -277,8 +263,15 @@ function downdate!(kd::CholeskyDowndater, idx::Int)
         kd.x = zeros(Float64, N+k)
         kd.C = Matrix{Float64}(I, (N+k,N+k))
     else
+        # Form x-vector for Sherman Morrison 
+        if kd.full_Q
+            x .= view(kd.Q, idx, 1:(N+k))
+        else
+            x .= transpose(kd.C) * view(kd.Q, idx, 1:(N+k))
+        end
         SM_sqrt_denom = 1 - x'x
         if (SM_sqrt_denom <= kd.SM_tol)
+            # To prevent divby zero errors
             perform_fullQR = true
         end
     end
@@ -425,7 +418,6 @@ mutable struct GivensUpDowndater <: KernelDowndater
         # Full QR forced indices (uniform)
         @assert (0.0 <= pct_full_qr <= 100.0)
         fullQR_forced = floor(Int, m * pct_full_qr / 100)
-        # Perhaps change this
         full_forced_inds = unique([floor(Int, i) for i in range(m+1, 1, length=fullQR_forced+2)[2:fullQR_forced+1]]) 
         return new(V, Q, R, ind_order, inds, ct, m, N, k, full_forced_inds)
     end
@@ -458,12 +450,11 @@ function downdate!(kd::GivensUpDowndater, idx::Int)
         pop!(kd.full_forced_inds)
         if k == (m - ct + 1)
             # Reduce number of kernel vectors formed
-            if kd.k > 1
-                kd.k -= 1
-                deleteat!(inds, pruneidx)
-                kd.Q = view(kd.Q, 1:(N+k-1), 1:(N+k-1))
-            end
-            newQ, newR = qr(view(kd.V,inds, 1:N))
+            kd.k -= 1
+            deleteat!(inds, pruneidx)
+            kd.Q = view(kd.Q, 1:(N+k-1), 1:(N+k-1))
+            # No need to store R anymore
+            newQ, _ = qr(view(kd.V,inds, 1:N))
             kd.Q .= newQ[1:(N+k-1), 1:(N+k-1)]
         else
             inds[pruneidx] = kd.ind_order[k + N + ct]
@@ -472,45 +463,18 @@ function downdate!(kd::GivensUpDowndater, idx::Int)
             kd.Q .= newQ[1:(N+k), 1:(N+k)]
             kd.R[1:N, 1:N] .= newR
         end
-    else
-        # Givens downdate
-        q = view(kd.Q, pruneidx, 1:(N+k))
-        r = q[N+k]
-        for i in (N+k):-1:(pruneidx+1)
-            G, r = givens(q[i-1], r, i-1, i)
-            rmul!(kd.Q, G')
-            lmul!(G, kd.R)
-        end
-        for i in (pruneidx-1):-1:1
-            G, r = givens(r, q[i], pruneidx, i)
-            rmul!(kd.Q, G')
-            lmul!(G, kd.R)
-        end
-
+    else # Givens down and update
+        givens_qr_row_downdate!(kd.Q, pruneidx, kd.R)
         if k == (m - ct + 1)
             # Reduce number of kernel vectors formed
-            if kd.k > 1
-                kd.k -= 1
-                deleteat!(inds, pruneidx)
-                newinds = [1:pruneidx-1 ; pruneidx+1:(N+k)]
-                kd.Q = view(kd.Q, newinds, newinds)
-            end
+            kd.k -= 1
+            deleteat!(inds, pruneidx)
+            newinds = [1:(pruneidx-1) ; (pruneidx+1):(N+k)]
+            kd.Q = view(kd.Q, newinds, newinds)
         else
             inds[pruneidx] = kd.ind_order[k + N + ct]
-            # Givens update
             newrow = view(kd.V, inds[pruneidx], 1:N)
-            kd.Q[pruneidx, pruneidx] = 1.0
-            kd.R[pruneidx, :] .= newrow
-            for i in 1:min(pruneidx-1, N)
-                G, r = givens(kd.R[i,i], kd.R[pruneidx,i], i, pruneidx)
-                rmul!(kd.Q, G')
-                lmul!(G, kd.R)
-            end
-            for i in pruneidx:N
-                G, r = givens(kd.R[i,i], kd.R[i+1,i], i, i+1)
-                rmul!(kd.Q, G')
-                lmul!(G, kd.R)
-            end
+            givens_qr_row_update!(kd.Q, kd.R, pruneidx, newrow)
         end
     end
     kd.ct += 1

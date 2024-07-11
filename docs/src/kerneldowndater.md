@@ -6,9 +6,9 @@ Denote ``V_{S*}`` to be the matrix formed by subselecting the indices specified 
 This is typically done by forming QR-factorizations of ``V_{S*}``, and pulling a trailing column, ``q``, from the Q-factor, such that ``{V_{S*}}^T q = 0``.
 The reason we are interested in forming kernel vectors is that then, we can update a set of weights without changing the moments.
 ```math
-{V_{S*}}^T q = 0,\quad {V_{S*}}^T w = \eta \implies {V_{S*}}^T (w + \alpha q) = \eta,
+{V_{S*}}^T q = 0,\quad {V_{S*}}^T w_{S} = \eta \implies {V_{S*}}^T (w_{S} + \alpha q) = \eta,
 ```
-where ``\alpha`` is a constant chosen to zero out one of the weights while keeping all others nonnegative. We then update as ``w = w + \alpha q``.
+where ``\alpha`` is a constant chosen to zero out one of the weights while keeping all others nonnegative. We then update the ``S``-indices of ``w`` as ``w_{S} = w_{S} + \alpha q``.
 
 However, in Caratheodory pruning, at each step, ``S`` is typically only changed by removing (or sometimes adding) a few elements at a time.
 Thus, it can be wasteful to fully recompute the QR decomposition at each step. 

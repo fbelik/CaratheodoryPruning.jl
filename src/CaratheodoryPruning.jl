@@ -5,6 +5,7 @@ using LinearAlgebra:
 using Random: randperm
 using ProgressBars: ProgressBar, update
 
+include("utils.jl")
 include("kernel.jl")
 include("pruning_weights.jl")
 include("caratheodory.jl")
