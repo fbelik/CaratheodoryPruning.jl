@@ -1,4 +1,3 @@
-using Revise
 using CaratheodoryPruning
 using Plots
 using ProgressBars

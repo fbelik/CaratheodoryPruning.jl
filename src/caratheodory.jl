@@ -3,8 +3,9 @@
 
 Base method for Caratheodory pruning of the matrix `V` and weights `w_in`.
 Returns a new set of weights, `w`, and a set of indices, `inds`, such that
-`w_in` only has nonzer0 elements at the indices, `inds`, and
-`Vᵀw_in - V[inds,:]ᵀw_in[inds] ≈ 0`.
+`w_in` only has nonzero elements at the indices, `inds`, and
+- if `size(V,1) > size(V,2)`, `Vᵀw_in - V[inds,:]ᵀw_in[inds] ≈ 0`
+- if `size(V,1) < size(V,2)`, `V w_in - V[inds,:] w_in[inds] ≈ 0`
 
 Uses the `kernel_downdater` object to generate kernel vectors for pruning,
 and the `prune_weights!` method to prune weights after kernel vectors have
@@ -20,17 +21,22 @@ If `progress=true`, displays a progress bar.
 If `return_errors=true`, returns an additional vector of moment errors throughout
 the procedure.
 
-`errornorm` is the method called on `Vᵀw_in - V[inds,:]ᵀw_in[inds]` to evaluate
-errors, only used if `caratheodory_correction=true` or `return_errors=true`. Defaults
+`errornorm` is the method called on `Vᵀw_in - V[inds,:]ᵀw_in[inds]` or 
+`V w_in - V[inds,:] w_in[inds]` to evaluate errors, only used if 
+`caratheodory_correction=true` or `return_errors=true`. Defaults 
 to LinearAlgebra.jl's norm method.
 """
-function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater, prune_weights!::Function; caratheodory_correction=false, progress=false, zero_tol=1e-16, return_errors=false, errnorm=norm)
+function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector, kernel_downdater::KernelDowndater, prune_weights!::Function; caratheodory_correction=false, progress=false, zero_tol=1e-16, return_errors=false, errnorm=norm)
     
     if length(w_in) <= size(V, 2)
         return w_in, eachindex(w_in)
     end
     w = copy(w_in)
     M, N = size(V)
+    if M < N
+        V = transpose(V)
+        M, N = N, M
+    end
     m = M-N
     ct = 1
 
@@ -123,7 +129,11 @@ on what is passed in. Options are `:first` or `:minabs`.
 
 See the other `caratheodory_pruning` docstring for info on other arguments.
 """
-function caratheodory_pruning(V, w_in; kernel=:CholeskyDowndater, pruning=:first, caratheodory_correction=false, return_errors=false, errnorm=norm, zero_tol=1e-16, progress=false, kernel_kwargs...)
+function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector; kernel=:CholeskyDowndater, pruning=:first, caratheodory_correction=false, return_errors=false, errnorm=norm, zero_tol=1e-16, progress=false, kernel_kwargs...)
+    M, N = size(V)
+    if M < N
+        V = transpose(V)
+    end
     kernel_downdater = begin
         if kernel in (:FullQRDowndater, :FullQR)
             FullQRDowndater(V; kernel_kwargs...)

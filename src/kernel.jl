@@ -313,7 +313,7 @@ for generating vectors in the kernel of its transpose. Only acts on
 and adds one of the remaining index, calling a new full QR factorization to 
 complete the down and update. Takes `O((N+k)³)` flops.
 
-Form with `FullQRUpDowndater(V[; ind_order=1:(size(V,1)), k=1])`.
+Form with `FullQRUpDowndater(V[; ind_order=randperm(size(V,1)), k=1])`.
 `ind_order` is the order in which the indices are added. `k` is the 
 (maximum) number of kernel vectors returned each time `get_kernel_vectors` is called. 
 """
@@ -385,7 +385,7 @@ for generating vectors in the kernel of its transpose. Only acts on
 and adds one of the remaining index, using Givens rotations to 
 complete the down and update. Takes `O((N+k)²)` flops.
 
-Form with `GivensUpDowndater(V[; ind_order=1:(size(V,1)), k=1])`.
+Form with `GivensUpDowndater(V[; ind_order=randperm(size(V,1)), k=1, pct_full_qr=2.0])`.
 `ind_order` is the order in which the indices are added. `k` is the 
 (maximum) number of kernel vectors returned each time `get_kernel_vectors` is called. 
 `pct_full_qr` is the percent of times, linearly spaced, that full QR
