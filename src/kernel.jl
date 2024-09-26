@@ -11,17 +11,17 @@ abstract type KernelDowndater end
 
 # Required methods for KernelDowndater objects
 """
-`get_inds(kd::KernelDowndater)`
+`get_inds(kd::KernelDowndater)::Vector{Int}`
 
 Method that must be implemented for abstract type `KernelDowndater`.
 
-Returns an abstract vector of indices, between 1 and the number of 
+Returns a vector of integer indices, between 1 and the number of 
 rows of the matrix `V`, for which when `get_kernel_vectors(kd)` is called,
 each kernel vector, `kvec`, is only assumed to be filled at the indices, i.e.,
 `transpose(V[inds,:]) * kvec = [0,0,...,0]`.
 Cannot contain any indices that were previously removed by `downdate!`.
 """
-function get_inds(kd::KernelDowndater)
+function get_inds(kd::KernelDowndater)::Vector{Int}
     error("Must implement inds for KernelDowndater")
 end
 
@@ -65,7 +65,7 @@ of kernel vectors returned each time `get_kernel_vectors` is called.
 mutable struct FullQRDowndater <: KernelDowndater
     V::AbstractMatrix
     Q::Union{AbstractMatrix,QRCompactWYQ}
-    inds::AbstractVector
+    inds::Vector{Int}
     N::Int
     k::Int
     function FullQRDowndater(V::AbstractMatrix; k=1)
@@ -81,7 +81,7 @@ mutable struct FullQRDowndater <: KernelDowndater
     end
 end
 
-function get_inds(kd::FullQRDowndater)
+function get_inds(kd::FullQRDowndater)::Vector{Int}
     return kd.inds
 end
 
@@ -115,7 +115,7 @@ of kernel vectors returned each time `get_kernel_vectors` is called.
 mutable struct GivensDowndater <: KernelDowndater
     V::AbstractMatrix
     Q::Union{AbstractMatrix,QRCompactWYQ}
-    inds::AbstractVector
+    inds::Vector{Int}
     N::Int
     k::Int
     function GivensDowndater(V::AbstractMatrix; k=1)
@@ -133,7 +133,7 @@ mutable struct GivensDowndater <: KernelDowndater
     end
 end
 
-function get_inds(kd::GivensDowndater)
+function get_inds(kd::GivensDowndater)::Vector{Int}
     return kd.inds
 end
 
@@ -182,7 +182,7 @@ mutable struct CholeskyDowndater <: KernelDowndater
     D::AbstractMatrix
     x::AbstractVector
     C::AbstractMatrix
-    inds::AbstractVector
+    inds::Vector{Int}
     ct::Int
     m::Int
     N::Int
@@ -224,7 +224,7 @@ mutable struct CholeskyDowndater <: KernelDowndater
     end
 end
 
-function get_inds(kd::CholeskyDowndater)
+function get_inds(kd::CholeskyDowndater)::Vector{Int}
     return kd.inds
 end
 
@@ -321,7 +321,7 @@ mutable struct FullQRUpDowndater <: KernelDowndater
     V::AbstractMatrix
     Q::Union{AbstractMatrix,QRCompactWYQ}
     ind_order::AbstractVector
-    inds::AbstractVector
+    inds::Vector{Int}
     ct::Int
     m::Int
     N::Int
@@ -341,7 +341,7 @@ mutable struct FullQRUpDowndater <: KernelDowndater
     end
 end
 
-function get_inds(kd::FullQRUpDowndater)
+function get_inds(kd::FullQRUpDowndater)::Vector{Int}
     return kd.inds
 end
 
@@ -395,8 +395,8 @@ mutable struct GivensUpDowndater <: KernelDowndater
     V::AbstractMatrix
     Q::AbstractMatrix
     R::AbstractMatrix
-    ind_order::AbstractVector
-    inds::AbstractVector
+    ind_order::Vector{Int}
+    inds::Vector{Int}
     ct::Int
     m::Int
     N::Int
@@ -423,7 +423,7 @@ mutable struct GivensUpDowndater <: KernelDowndater
     end
 end
 
-function get_inds(kd::GivensUpDowndater)
+function get_inds(kd::GivensUpDowndater)::Vector{Int}
     return kd.inds
 end
 
