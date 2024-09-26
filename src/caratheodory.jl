@@ -59,7 +59,7 @@ function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector, kernel_do
             if (ct > m)
                 break
             end
-            if abs(w[ind]) < zero_tol
+            if w[ind] < zero_tol
                 numzeros += 1
                 downdate!(kernel_downdater, ind)
                 if return_errors
