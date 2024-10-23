@@ -39,8 +39,10 @@ function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector, kernel_do
     end
     m = M-N
     ct = 1
-
-    Vtw = transpose(V)*w
+    
+    if caratheodory_correction || return_errors
+        Vtw = transpose(V)*w
+    end
 
     if return_errors
         errors = zeros(m)
@@ -48,7 +50,6 @@ function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector, kernel_do
     if progress
         pbar = ProgressBar(total=m)
     end
-
     while ct <= m
         inds = get_inds(kernel_downdater)
         kvecs = get_kernel_vectors(kernel_downdater)
@@ -113,7 +114,7 @@ function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector, kernel_do
 end
 
 """
-`caratheodory_pruning(V, w_in[; kernel=:CholeskyDowndater, pruning=:first, caratheodory_correction=false, return_errors=false, errnorm=norm, zero_tol=1e-16, progress=false, kernel_kwargs...])`
+`caratheodory_pruning(V, w_in[; kernel=:GivensUpDown, pruning=:first, caratheodory_correction=false, return_errors=false, errnorm=norm, zero_tol=1e-16, progress=false, kernel_kwargs...])`
 
 Helper method for calling the base `caratheodory_pruning` method.
 
@@ -129,7 +130,7 @@ on what is passed in. Options are `:first` or `:minabs`.
 
 See the other `caratheodory_pruning` docstring for info on other arguments.
 """
-function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector; kernel=:CholeskyDowndater, pruning=:first, caratheodory_correction=false, return_errors=false, errnorm=norm, zero_tol=1e-16, progress=false, kernel_kwargs...)
+function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector; kernel=:GivensUpDown, pruning=:first, caratheodory_correction=false, return_errors=false, errnorm=norm, zero_tol=1e-16, progress=false, kernel_kwargs...)
     M, N = size(V)
     if M < N
         V = transpose(V)

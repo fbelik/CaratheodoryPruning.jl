@@ -20,4 +20,12 @@ using LinearAlgebra: norm
             end
         end
     end
+    @testset "OnDemandMatrix $selection-wise" for selection in (:cols,:rows)
+        M = OnDemandMatrix(5, 5, i -> [1.0*(i==j) for j in 1:5], by=selection, T=Float64)
+        M[2,2]
+        @test (2 in keys(M.vecs))
+        @test (M.vecs[2][2] == 1.0)
+        @test (M.vecs[2][5] == 0.0)
+        @test (length(keys(M.vecs)) == 1)
+    end
 end

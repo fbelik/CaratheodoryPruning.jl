@@ -8,6 +8,7 @@ makedocs(
         "Background" => "index.md",
         "Kernel Downdaters" => "kerneldowndater.md",
         "Pruning" => "pruning.md",
+        "On Demand Matrices" => "ondemand.md",
     ],
     checkdocs = :none,
     format = Documenter.HTML(prettyurls = false),

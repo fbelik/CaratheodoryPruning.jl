@@ -6,10 +6,13 @@ using Random: randperm
 using ProgressBars: ProgressBar, update
 
 include("utils.jl")
+include("ondemand_matrix.jl")
 include("kernel.jl")
 include("pruning_weights.jl")
 include("caratheodory.jl")
 
+export OnDemandMatrix
+export forget!
 export CholeskyDowndater
 export FullQRDowndater
 export GivensDowndater

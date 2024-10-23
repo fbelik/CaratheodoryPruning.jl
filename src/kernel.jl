@@ -362,6 +362,9 @@ function downdate!(kd::FullQRUpDowndater, idx::Int)
 
     N = kd.N; k = kd.k; ct = kd.ct; m = kd.m
 
+    if kd.V isa OnDemandMatrix && kd.V.cols == false
+        forget!(kd.V, kd.inds[pruneidx])
+    end
 
     if k == (m - ct + 1) # k + N + ct == M + 1, no more vectors to choose from
         kd.k -= 1
@@ -443,6 +446,10 @@ function downdate!(kd::GivensUpDowndater, idx::Int)
 
     N = kd.N; k = kd.k; ct = kd.ct; m = kd.m
     inds = kd.inds
+
+    if kd.V isa OnDemandMatrix && kd.V.cols == false
+        forget!(kd.V, inds[pruneidx])
+    end
 
     perform_fullQR = (length(kd.full_forced_inds) > 0 && ct == kd.full_forced_inds[end])
 
