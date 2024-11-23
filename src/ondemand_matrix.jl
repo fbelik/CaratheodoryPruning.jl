@@ -30,6 +30,7 @@ struct OnDemandMatrix{T} <: AbstractMatrix{T}
     vecs::Dict{Int,AbstractVector{T}}
     vecfun::Function
     cols::Bool
+    addl::Dict{Int,Any}
 end
 
 """
@@ -41,7 +42,8 @@ formed when needed by `vecfun(i::Int)`. Default type is `T=Float64`.
 function OnDemandMatrix(n::Int, m::Int, vecfun::Function; by=:cols, T=Float64)
     @assert (by in (:rows, :cols)) "by argument must be either :cols or :rows"
     vecs = Dict{Int,AbstractVector{T}}()
-    return OnDemandMatrix{T}(n, m, vecs, vecfun, by==:cols)
+    addl = Dict{Int,Any}()
+    return OnDemandMatrix{T}(n, m, vecs, vecfun, by==:cols, addl)
 end
 
 function Base.size(M::OnDemandMatrix)
@@ -58,19 +60,32 @@ function Base.show(io::Core.IO, M::OnDemandMatrix{T}) where T
     print(io, "OnDemandMatrix{$T}(")
     print(io, "vecs=$(M.vecs),")
     print(io, "vecfun=$(M.vecfun),")
-    print(io, "cols=$(M.cols))")
+    print(io, "cols=$(M.cols),")
+    print(io, "addl=$(M.addl))")
 end
 
 function Base.getindex(M::OnDemandMatrix, idx::Vararg{Int,2})
     i,j = idx
     if M.cols
         if !(j in keys(M.vecs))
-            push!(M.vecs, j => M.vecfun(j))
+            vec = M.vecfun(j)
+            if vec isa Tuple{<:AbstractVector,<:Any}
+                push!(M.vecs, j => vec[1])
+                push!(M.addl, j => vec[2])
+            else
+                push!(M.vecs, j => vec)
+            end
         end
         return M.vecs[j][i]
     else
         if !(i in keys(M.vecs))
-            push!(M.vecs, i => M.vecfun(i))
+            vec = M.vecfun(i)
+            if vec isa Tuple{<:AbstractVector,<:Any}
+                push!(M.vecs, i => vec[1])
+                push!(M.addl, i => vec[2])
+            else
+                push!(M.vecs, i => vec)
+            end
         end
         return M.vecs[i][j]
     end
@@ -85,11 +100,12 @@ or row is not stored, will do nothing.
 """
 function forget!(M::OnDemandMatrix, i::Int)
     pop!(M.vecs, i, nothing)
+    pop!(M.addl, i, nothing)
     M
 end
 
 function Base.transpose(M::OnDemandMatrix{T}) where T
-    return OnDemandMatrix{T}(size(M,2), size(M,1), M.vecs, M.vecfun, !M.cols)
+    return OnDemandMatrix{T}(size(M,2), size(M,1), M.vecs, M.vecfun, !M.cols, M.addl)
 end
 
 function Base.view(M::OnDemandMatrix, i::Int, js::Union{<:AbstractVector{Int},Colon})
