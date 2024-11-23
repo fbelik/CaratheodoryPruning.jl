@@ -320,13 +320,13 @@ Form with `FullQRUpDowndater(V[; ind_order=randperm(size(V,1)), k=1])`.
 mutable struct FullQRUpDowndater <: KernelDowndater
     V::AbstractMatrix
     Q::Union{AbstractMatrix,QRCompactWYQ}
-    ind_order::AbstractVector
+    ind_order::AbstractVector{Int}
     inds::Vector{Int}
     ct::Int
     m::Int
     N::Int
     k::Int
-    function FullQRUpDowndater(V::AbstractMatrix; ind_order=randperm(size(V,1)), k=1)
+    function FullQRUpDowndater(V::AbstractMatrix; ind_order=1:(size(V,1)), k=1)
         M, N = size(V)
         m = M - N
         if k > m
@@ -334,7 +334,6 @@ mutable struct FullQRUpDowndater <: KernelDowndater
         end
         ct = 1
         # Allocate arrays
-        ind_order = collect(ind_order)
         inds = ind_order[1:(N+k)]
         Q,_ = qr(view(V, inds, 1:N))
         return new(V, Q, ind_order, inds, ct, m, N, k)
@@ -353,6 +352,9 @@ end
 
 function downdate!(kd::FullQRUpDowndater, idx::Int)
     pruneidx = findfirst(==(idx), kd.inds)
+    if kd.V isa OnDemandMatrix && kd.V.cols == false
+        forget!(kd.V, kd.inds[pruneidx])
+    end
     if kd.ct == kd.m
         deleteat!(kd.inds, pruneidx)
         return # No need to downdate anymore
@@ -361,10 +363,6 @@ function downdate!(kd::FullQRUpDowndater, idx::Int)
     pruneidx = findfirst(==(idx), kd.inds)
 
     N = kd.N; k = kd.k; ct = kd.ct; m = kd.m
-
-    if kd.V isa OnDemandMatrix && kd.V.cols == false
-        forget!(kd.V, kd.inds[pruneidx])
-    end
 
     if k == (m - ct + 1) # k + N + ct == M + 1, no more vectors to choose from
         kd.k -= 1
@@ -398,14 +396,14 @@ mutable struct GivensUpDowndater <: KernelDowndater
     V::AbstractMatrix
     Q::AbstractMatrix
     R::AbstractMatrix
-    ind_order::Vector{Int}
+    ind_order::AbstractVector{Int}
     inds::Vector{Int}
     ct::Int
     m::Int
     N::Int
     k::Int
     full_forced_inds::AbstractVector{<:Int}
-    function GivensUpDowndater(V::AbstractMatrix; ind_order=randperm(size(V,1)), k=1, pct_full_qr=2.0)
+    function GivensUpDowndater(V::AbstractMatrix; ind_order=1:(size(V,1)), k=1, pct_full_qr=2.0)
         M, N = size(V)
         m = M - N
         if k > m
@@ -413,7 +411,6 @@ mutable struct GivensUpDowndater <: KernelDowndater
         end
         ct = 1
         # Allocate arrays
-        ind_order = collect(ind_order)
         inds = ind_order[1:(N+k)]
         Q,R = qr(view(V, inds, 1:N))
         Q = Q[1:(N+k),1:(N+k)]
@@ -439,6 +436,9 @@ end
 
 function downdate!(kd::GivensUpDowndater, idx::Int)
     pruneidx = findfirst(==(idx), kd.inds)
+    if kd.V isa OnDemandMatrix && kd.V.cols == false
+        forget!(kd.V, kd.inds[pruneidx])
+    end
     if kd.ct == kd.m
         deleteat!(kd.inds, pruneidx)
         return # No need to downdate anymore
@@ -446,10 +446,6 @@ function downdate!(kd::GivensUpDowndater, idx::Int)
 
     N = kd.N; k = kd.k; ct = kd.ct; m = kd.m
     inds = kd.inds
-
-    if kd.V isa OnDemandMatrix && kd.V.cols == false
-        forget!(kd.V, inds[pruneidx])
-    end
 
     perform_fullQR = (length(kd.full_forced_inds) > 0 && ct == kd.full_forced_inds[end])
 

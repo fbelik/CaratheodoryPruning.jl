@@ -63,6 +63,10 @@ function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector, kernel_do
             if w[ind] < zero_tol
                 numzeros += 1
                 downdate!(kernel_downdater, ind)
+                w[ind] = 0.0
+                if isa(w, OnDemandVector)
+                    forget!(w, ind)
+                end
                 if return_errors
                     errors[ct] = errnorm(transpose(V)*w .- Vtw)
                 end
@@ -83,7 +87,7 @@ function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector, kernel_do
             w_cor = view(V,inds,1:N)' \ Vtw
             # Check if any negative entries
             minentry = minimum(w_cor)
-            if minentry >= 0
+            if minentry <= 0
                 w_cor .*= (w_cor .>= 0)
             end
             Vt = transpose(view(V,inds,:))

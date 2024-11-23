@@ -1,4 +1,4 @@
-# On Demand Matrices
+# On Demand Matrices and Vectors
 
 In the case that the matrix ``V`` is too large to store in memory, when using a `KernelDowndater` such as `GivensUpDowndater` which only requires access to a select number of rows of ``V`` at a time, we have implemented a matrix type `OnDemandMatrix` which stores only the required rows (or columns) at a time. The `GivensUpDowndater` or `FullQRUpDowndater` will automatically delete unneeded rows/columns throughout the pruning procedure. 
 
@@ -13,3 +13,11 @@ To manually erase or forget a given row/column, call the `forget!` method.
 ```@docs
 forget!
 ```
+
+Similarly, if the larger dimension of `V` is so large that we wish to have complete memory independence from that dimension, we can store the weights in an `OnDemandVector` which only stores the required elements at a time. The method `caratheodory_pruning` will automatically delete unneeded elements throughout the pruning procedure. 
+
+```@docs
+OnDemandVector
+```
+
+The method `forget!` works the same for the `OnDemandVector`.

@@ -7,11 +7,13 @@ using ProgressBars: ProgressBar, update
 
 include("utils.jl")
 include("ondemand_matrix.jl")
+include("ondemand_vector.jl")
 include("kernel.jl")
 include("pruning_weights.jl")
 include("caratheodory.jl")
 
 export OnDemandMatrix
+export OnDemandVector
 export forget!
 export CholeskyDowndater
 export FullQRDowndater
