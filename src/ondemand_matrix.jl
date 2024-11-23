@@ -111,7 +111,13 @@ end
 function Base.view(M::OnDemandMatrix, i::Int, js::Union{<:AbstractVector{Int},Colon})
     if (!M.cols)
         if !(i in keys(M.vecs))
-            push!(M.vecs, i => M.vecfun(i))
+            vec = M.vecfun(i)
+            if vec isa Tuple{<:AbstractVector,<:Any}
+                push!(M.vecs, i => vec[1])
+                push!(M.addl, i => vec[2])
+            else
+                push!(M.vecs, i => vec)
+            end
         end
         return view(M.vecs[i], js)
     else
@@ -122,7 +128,13 @@ end
 function Base.view(M::OnDemandMatrix, is::Union{<:AbstractVector{Int},Colon}, j::Int)
     if (M.cols)
         if !(j in keys(M.vecs))
-            push!(M.vecs, j => M.vecfun(j))
+            vec = M.vecfun(j)
+            if vec isa Tuple{<:AbstractVector,<:Any}
+                push!(M.vecs, j => vec[1])
+                push!(M.addl, j => vec[2])
+            else
+                push!(M.vecs, j => vec)
+            end
         end
         return view(M.vecs[j], is)
     else
