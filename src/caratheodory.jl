@@ -1,5 +1,5 @@
 """
-`caratheodory_pruning(V, w_in, kernel_downdater, prune_weights![; caratheodory_correction=false, progress=false, zero_tol=1e-16, return_error=false, errnorm=norm])`
+`caratheodory_pruning(V, w_in, kernel_downdater, prune_weights![; caratheodory_correction=true, progress=false, zero_tol=1e-16, return_error=false, errnorm=norm])`
 
 Base method for Caratheodory pruning of the matrix `V` and weights `w_in`.
 Returns a new set of weights, `w`, and a set of indices, `inds`, such that
@@ -121,7 +121,7 @@ function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector, kernel_do
 end
 
 """
-`caratheodory_pruning(V, w_in[; kernel=:GivensUpDown, pruning=:first, caratheodory_correction=false, return_error=false, errnorm=norm, zero_tol=1e-16, progress=false, kernel_kwargs...])`
+`caratheodory_pruning(V, w_in[; kernel=:GivensUpDown, pruning=:first, caratheodory_correction=true, return_error=false, errnorm=norm, zero_tol=1e-16, progress=false, kernel_kwargs...])`
 
 Helper method for calling the base `caratheodory_pruning` method.
 
