@@ -1,5 +1,5 @@
 """
-`caratheodory_pruning(V, w_in, kernel_downdater, prune_weights![; caratheodory_correction=false, progress=false, zero_tol=1e-16, return_errors=false, errnorm=norm])`
+`caratheodory_pruning(V, w_in, kernel_downdater, prune_weights![; caratheodory_correction=false, progress=false, zero_tol=1e-16, return_error=false, errnorm=norm])`
 
 Base method for Caratheodory pruning of the matrix `V` and weights `w_in`.
 Returns a new set of weights, `w`, and a set of indices, `inds`, such that
@@ -18,37 +18,32 @@ If `progress=true`, displays a progress bar.
 
 `zero_tol` determines the tolerance for a weight equaling zero.
 
-If `return_errors=true`, returns an additional vector of moment errors throughout
-the procedure.
+If `return_error=true`, returns an additional float of moment errors at the
+end of the procedure.
 
-`errornorm` is the method called on `Vᵀw_in - V[inds,:]ᵀw_in[inds]` or 
-`V w_in - V[inds,:] w_in[inds]` to evaluate errors, only used if 
-`caratheodory_correction=true` or `return_errors=true`. Defaults 
-to LinearAlgebra.jl's norm method.
+`errornorm` is the method called on the truth moments vs computed moments
+to evaluate final error, only used if `caratheodory_correction=true` 
+or `return_error=true`. Defaults to LinearAlgebra.jl's norm method.
 """
-function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector, kernel_downdater::KernelDowndater, prune_weights!::Function; caratheodory_correction=false, progress=false, zero_tol=1e-16, return_errors=false, errnorm=norm)
+function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector, kernel_downdater::KernelDowndater, prune_weights!::Function; 
+                              caratheodory_correction=true, progress=false, zero_tol=1e-16, return_error=false, errnorm=norm)
     
-    if length(w_in) <= size(V, 2)
-        return w_in, eachindex(w_in)
-    end
-    w = copy(w_in)
     M, N = size(V)
     if M < N
         V = transpose(V)
         M, N = N, M
     end
+    w = copy(w_in)
     m = M-N
     ct = 1
-    
-    if caratheodory_correction || return_errors
-        Vtw = transpose(V)*w
+    err = 0.0
+    if caratheodory_correction || return_error
+        η_truth = zeros(N)
     end
 
-    if return_errors
-        errors = zeros(m)
-    end
     if progress
         pbar = ProgressBar(total=m)
+        every = max(1, floor(Int, m / 10000))
     end
     while ct <= m
         inds = get_inds(kernel_downdater)
@@ -62,17 +57,17 @@ function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector, kernel_do
             end
             if w[ind] < zero_tol
                 numzeros += 1
+                if caratheodory_correction || return_error
+                    η_truth .+= (w_in[ind] .* view(V, ind, :))
+                end
                 downdate!(kernel_downdater, ind)
                 w[ind] = 0.0
                 if isa(w, OnDemandVector)
                     forget!(w, ind)
                 end
-                if return_errors
-                    errors[ct] = errnorm(transpose(V)*w .- Vtw)
-                end
                 ct += 1
-                if progress
-                    update(pbar)
+                if progress && (ct % every == 1)
+                    update(pbar, every)
                 end
             end
         end
@@ -80,26 +75,35 @@ function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector, kernel_do
             error("Did not prune any weights. Check implementation of kernel downdater or prune_weights!.")
         end
     end
+    if progress && (pbar.current < m)
+        update(pbar, m - pbar.current)
+    end
+    inds = get_inds(kernel_downdater)
+    if caratheodory_correction || return_error
+        η_comp = zeros(N)
+        for ind in inds
+            η_comp .+= (w[ind] .* view(V, ind, :))
+            η_truth .+= (w_in[ind] .* view(V, ind, :))
+        end
+        err = errnorm(η_comp .- η_truth)
+    end
     # Try to correct weights
     if caratheodory_correction
         try
-            inds = get_inds(kernel_downdater)
-            w_cor = view(V,inds,1:N)' \ Vtw
+            w_cor = transpose(view(V,inds,1:N)) \ η_truth
             # Check if any negative entries
             minentry = minimum(w_cor)
             if minentry <= 0
                 w_cor .*= (w_cor .>= 0)
             end
-            Vt = transpose(view(V,inds,:))
-            error = errnorm(Vt * view(w,inds) .- Vtw)
-            corrected_error = errnorm(Vt * w_cor .- Vtw)
-            if corrected_error < error
-                w[inds] .= w_cor
-                error = corrected_error
+            η_comp .= 0.0
+            for (i,ind) in enumerate(inds)
+                η_comp .+= (w_cor[i] .* view(V, ind, :))
             end
-            
-            if return_errors
-                push!(errors, error)
+            new_err = errnorm(η_comp .- η_truth)
+            if new_err < err
+                w[inds] .= w_cor
+                err = new_err
             end
         catch e
             println("Exception: ")
@@ -109,16 +113,15 @@ function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector, kernel_do
             end
         end
     end
-    inds = get_inds(kernel_downdater)
-    if return_errors
-        return w, inds, errors
+    if return_error
+        return w, inds, err
     else
         return w, inds
     end
 end
 
 """
-`caratheodory_pruning(V, w_in[; kernel=:GivensUpDown, pruning=:first, caratheodory_correction=false, return_errors=false, errnorm=norm, zero_tol=1e-16, progress=false, kernel_kwargs...])`
+`caratheodory_pruning(V, w_in[; kernel=:GivensUpDown, pruning=:first, caratheodory_correction=false, return_error=false, errnorm=norm, zero_tol=1e-16, progress=false, kernel_kwargs...])`
 
 Helper method for calling the base `caratheodory_pruning` method.
 
@@ -134,7 +137,8 @@ on what is passed in. Options are `:first` or `:minabs`.
 
 See the other `caratheodory_pruning` docstring for info on other arguments.
 """
-function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector; kernel=:GivensUpDown, pruning=:first, caratheodory_correction=false, return_errors=false, errnorm=norm, zero_tol=1e-16, progress=false, kernel_kwargs...)
+function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector; kernel=:GivensUpDown, pruning=:first, caratheodory_correction=true, 
+                              return_error=false, errnorm=norm, zero_tol=1e-16, progress=false, kernel_kwargs...)
     M, N = size(V)
     if M < N
         V = transpose(V)
@@ -163,5 +167,5 @@ function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector; kernel=:G
             error("Unrecognized pruning choice: $(pruning)")
         end
     end
-    return caratheodory_pruning(V, w_in, kernel_downdater, prune_weights!, caratheodory_correction=caratheodory_correction, return_errors=return_errors, errnorm=errnorm, zero_tol=zero_tol, progress=progress)
+    return caratheodory_pruning(V, w_in, kernel_downdater, prune_weights!, caratheodory_correction=caratheodory_correction, return_error=return_error, errnorm=errnorm, zero_tol=zero_tol, progress=progress)
 end
