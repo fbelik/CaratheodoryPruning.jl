@@ -58,7 +58,9 @@ end
 function Base.getindex(M::OnDemandVector, idx::Vararg{Int,1})
     i, = idx
     if !(i in keys(M.elems))
-        push!(M.elems, i => M.elemfun(i))
+        val = M.elemfun(i)
+        push!(M.elems, i => val)
+        return val
     end
     return M.elems[i]
 end

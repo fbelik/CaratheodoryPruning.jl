@@ -72,8 +72,10 @@ function Base.getindex(M::OnDemandMatrix, idx::Vararg{Int,2})
             if vec isa Tuple{<:AbstractVector,<:Any}
                 push!(M.vecs, j => vec[1])
                 push!(M.addl, j => vec[2])
+                return vec[1][i]
             else
                 push!(M.vecs, j => vec)
+                return vec[i]
             end
         end
         return M.vecs[j][i]
@@ -83,8 +85,10 @@ function Base.getindex(M::OnDemandMatrix, idx::Vararg{Int,2})
             if vec isa Tuple{<:AbstractVector,<:Any}
                 push!(M.vecs, i => vec[1])
                 push!(M.addl, i => vec[2])
+                return vec[1][j]
             else
                 push!(M.vecs, i => vec)
+                return vec[j]
             end
         end
         return M.vecs[i][j]
@@ -115,8 +119,10 @@ function Base.view(M::OnDemandMatrix, i::Int, js::Union{<:AbstractVector{Int},Co
             if vec isa Tuple{<:AbstractVector,<:Any}
                 push!(M.vecs, i => vec[1])
                 push!(M.addl, i => vec[2])
+                return view(vec[1], js)
             else
                 push!(M.vecs, i => vec)
+                return view(vec, js)
             end
         end
         return view(M.vecs[i], js)
@@ -132,8 +138,10 @@ function Base.view(M::OnDemandMatrix, is::Union{<:AbstractVector{Int},Colon}, j:
             if vec isa Tuple{<:AbstractVector,<:Any}
                 push!(M.vecs, j => vec[1])
                 push!(M.addl, j => vec[2])
+                return view(vec[1], is)
             else
                 push!(M.vecs, j => vec)
+                return view(vec, is)
             end
         end
         return view(M.vecs[j], is)
