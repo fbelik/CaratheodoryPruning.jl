@@ -33,6 +33,14 @@ function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector, kernel_do
         V = transpose(V)
         M, N = N, M
     end
+    if length(w_in) == N # No pruning to do
+        if return_error
+            return w_in, 1:N, 0.0
+        end
+        return w_in, 1:N
+    elseif length(w_in) != M # Dimension mismatch
+        error("Dimension mismatch between V ($M×$N) and w ($(length(w_in)))")
+    end
     w = copy(w_in)
     m = M-N
     ct = 1

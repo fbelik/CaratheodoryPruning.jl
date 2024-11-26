@@ -60,10 +60,10 @@ M = 100
 N = 10
 V = rand(M, N)
 w_in = rand(M)
-eta = transpose(V) * w_in
+eta = V' * w_in
 w, inds = caratheodory_pruning(V, w_in)
 w[inds]
 ```
 ```@example 1
-error = maximum(abs.(V[inds,:]'w[inds] .- eta))
+error = maximum(abs.(V[inds,:]' * w[inds] .- eta))
 ```

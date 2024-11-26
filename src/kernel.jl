@@ -390,7 +390,7 @@ Form with `GivensUpDowndater(V[; ind_order=randperm(size(V,1)), k=1, pct_full_qr
 `ind_order` is the order in which the indices are added. `k` is the 
 (maximum) number of kernel vectors returned each time `get_kernel_vectors` is called. 
 `pct_full_qr` is the percent of times, linearly spaced, that full QR
-factorizations are performed to prevent accumulation error in `Q`.
+factorizations are performed to prevent error accumulation in `Q`.
 """
 mutable struct GivensUpDowndater <: KernelDowndater
     V::AbstractMatrix

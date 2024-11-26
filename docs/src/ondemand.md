@@ -14,7 +14,7 @@ To manually erase or forget a given row/column, call the `forget!` method.
 forget!
 ```
 
-Similarly, if the larger dimension of `V` is so large that we wish to have complete memory independence from that dimension, we can store the weights in an `OnDemandVector` which only stores the required elements at a time. The method `caratheodory_pruning` will automatically delete unneeded elements throughout the pruning procedure. 
+Similarly, if the larger dimension of ``V`` is so large that we wish to have complete memory independence from that dimension, we can store the weights in an `OnDemandVector` which only stores the required elements at a time. The method `caratheodory_pruning` will automatically delete unneeded elements throughout the pruning procedure. 
 
 ```@docs
 OnDemandVector

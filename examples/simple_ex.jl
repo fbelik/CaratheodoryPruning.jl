@@ -9,13 +9,15 @@ w = rand(M)
 
 η = V'w
 
-w_pruned, inds = caratheodory_pruning(V, w) # Cholesky Method
+w_pruned, inds = caratheodory_pruning(V, w) # GivensUpDown Method
 # w_pruned, inds = caratheodory_pruning(V, w, kernel=:FullQR)
 # w_pruned, inds = caratheodory_pruning(V, w, kernel=:Givens)
 # w_pruned, inds = caratheodory_pruning(V, w, kernel=:Cholesky)
 # w_pruned, inds = caratheodory_pruning(V, w, kernel=:FullQRUpDown)
 # w_pruned, inds = caratheodory_pruning(V, w, kernel=:GivensUpDown)
 
-error = norm(V[inds,:]'w_pruned[inds] .- η)
+η_comp = V[inds,:]' * w_pruned[inds]
+
+error = norm(η_comp .- η)
 
 println("Error in quadrature moments is $error")
