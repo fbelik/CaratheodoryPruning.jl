@@ -127,7 +127,8 @@ function Base.view(M::OnDemandMatrix, i::Int, js::Union{<:AbstractVector{Int},Co
         end
         return view(M.vecs[i], js)
     else
-        return view(M, i:i, js)
+        lj = isa(js, Colon) ? M.m : length(js)
+        return reshape(view(M, i:i, js), (lj,))
     end
 end
 
@@ -146,6 +147,7 @@ function Base.view(M::OnDemandMatrix, is::Union{<:AbstractVector{Int},Colon}, j:
         end
         return view(M.vecs[j], is)
     else
-        return view(M, is, j:j)
+        li = isa(is, Colon) ? M.n : length(is)
+        return reshape(view(M, is, j:j),(li,))
     end
 end

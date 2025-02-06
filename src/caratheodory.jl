@@ -41,6 +41,9 @@ function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector, kernel_do
     elseif length(w_in) != M # Dimension mismatch
         error("Dimension mismatch between V ($M×$N) and w ($(length(w_in)))")
     end
+    if isa(V, OnDemandMatrix) && V.cols
+        @warn "Performance will be slow with current OnDemandMatrix implementation \n         For better performance, transpose OnDemandMatrix storage"
+    end
     w = copy(w_in)
     m = M-N
     ct = 1
@@ -51,7 +54,7 @@ function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector, kernel_do
 
     if progress
         pbar = ProgressBar(total=m)
-        every = max(1, floor(Int, m / 10000))
+        every = max(1, floor(Int, m / 500))
     end
     while ct <= m
         inds = get_inds(kernel_downdater)

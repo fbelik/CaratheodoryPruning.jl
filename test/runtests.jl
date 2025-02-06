@@ -50,5 +50,14 @@ using LinearAlgebra: norm
         @test norm(V[:,inds2]*w2[inds2] .- V0[:,inds1]*w1[inds1]) <= 1e-6
         @test length(keys(w2.elems)) == N
         @test length(keys(V.vecs)) == N
+        # Test if use row-storage instead
+        V = OnDemandMatrix(N,M,i->V0[i,:],by=:rows)
+        seed!(1) # In case of randomness
+        w3,inds3 = caratheodory_pruning(V, w0)
+        @test inds1 == inds3
+        @test norm(w1[inds1] .- w3[inds3]) <= 1e-6
+        @test norm(V[:,inds3]*w3[inds3] .- V0[:,inds1]*w1[inds1]) <= 1e-6
+        @test length(keys(V.vecs)) == N
+        @test all([length(V.vecs[i]) == M for i in 1:N])
     end
 end
