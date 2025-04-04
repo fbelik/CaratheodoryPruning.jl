@@ -117,7 +117,7 @@ function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector, kernel_do
                 err = new_err
             end
         catch e
-            println("Exception: ")
+            println("Exception during Caratheodory correction: ")
             println(e)
             if !(isa(e, SingularException))
                 throw(e)
