@@ -137,9 +137,8 @@ Helper method for calling the base `caratheodory_pruning` method.
 Takes in a symbol for `kernel`, and forms a `KernelDowndater` object depending
 on what is passed in. Also passes additional kwargs into the `KernelDowndater`:
 
-Options include `:FullQRDowndater` or `:FullQR`, `:GivensDowndater` or `:Givens`,
-`:CholeskyDowndater` or `:Cholesky`, `:FullQRUpDowndater` or `:FullQRUpDown`,
-and `:GivensUpDownDater` or `:GivensUpDown`.
+Options include `FullQRDowndater`, `GivensDowndater`, `CholeskyDowndater`, 
+`FullQRUpDowndater`, and `GivensUpDownDater`.
 
 Takes in a symbol for `pruning`, and chooses a pruning method depending
 on what is passed in. Options are `:first` or `:minabs`.
@@ -155,21 +154,7 @@ function caratheodory_pruning(V, w_in; kernel=GivensUpDowndater,
     if M < N
         V = transpose(V)
     end
-    kernel_downdater = begin
-        if kernel in (:FullQRDowndater, :FullQR)
-            FullQRDowndater(V; kernel_kwargs...)
-        elseif kernel in (:GivensDowndater, :Givens)
-            GivensDowndater(V; kernel_kwargs...)
-        elseif kernel in (:CholeskyDowndater, :Cholesky)
-            CholeskyDowndater(V; kernel_kwargs...)
-        elseif kernel in (:FullQRUpDowndater, :FullQRUpDown)
-            FullQRUpDowndater(V; kernel_kwargs...)
-        elseif kernel in (:GivensUpDowndater, :GivensUpDown)
-            GivensUpDowndater(V; kernel_kwargs...)
-        else
-            error("Unrecognized kernel choice: $(kernel)")
-        end
-    end
+    kernel_downdater = kernel(V; kernel_kwargs...)
     prune_weights! = begin
         if pruning == :first
             prune_weights_first!

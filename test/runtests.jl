@@ -10,7 +10,7 @@ using LinearAlgebra: norm
     @inferred caratheodory_pruning(V, w)
     Vtw = V'w
     tol = 1e-12
-    @testset "Kernel choice $kernel" for kernel in (:FullQR, :Givens, :Cholesky, :FullQRUpDown, :GivensUpDown)
+    @testset "Kernel choice $kernel" for kernel in (FullQRDowndater, GivensDowndater, CholeskyDowndater, FullQRUpDowndater, GivensUpDowndater)
         for pruning in (:first, :minabs)
             for caratheodory_correction in (true,false)
                 for k in (1,5)
