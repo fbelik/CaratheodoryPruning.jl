@@ -28,11 +28,10 @@ corresponding errors in moments, `err`. If both `return_error` and
 to evaluate final error, only used if `caratheodory_correction=true` 
 or `return_error=true`. Defaults to LinearAlgebra.jl's norm method.
 """
-function caratheodory_pruning(V::MType, w_in::VType, kernel_downdater::KernelDowndater, 
-                              prune_weights!::Function; caratheodory_correction::Bool=true, 
-                              progress::Bool=false, zero_tol::Real=1e-16, return_error::Bool=false, 
-                              errnorm::Function=norm
-    ) where MType<:AbstractMatrix{T} where VType<:AbstractVector{T} where T
+function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater, 
+                              prune_weights!::Function; caratheodory_correction=true, 
+                              progress::Bool=false, zero_tol=1e-16, return_error=false, 
+                              errnorm::Function=norm) 
     
     M, N = size(V)
     if M < N
@@ -127,11 +126,11 @@ function caratheodory_pruning(V::MType, w_in::VType, kernel_downdater::KernelDow
             end
         end
     end
-    return (w::VType, inds::Vector{Int}, err::Float64)
+    return w, inds, err
 end
 
 """
-`caratheodory_pruning(V, w_in[; kernel=:GivensUpDown, pruning=:first, caratheodory_correction=true, return_error=false, errnorm=norm, zero_tol=1e-16, progress=false, kernel_kwargs...])`
+`caratheodory_pruning(V, w_in[; kernel=GivensUpDownDater, pruning=:first, caratheodory_correction=true, return_error=false, errnorm=norm, zero_tol=1e-16, progress=false, kernel_kwargs...])`
 
 Helper method for calling the base `caratheodory_pruning` method.
 
@@ -147,11 +146,10 @@ on what is passed in. Options are `:first` or `:minabs`.
 
 See the other `caratheodory_pruning` docstring for info on other arguments.
 """
-function caratheodory_pruning(V::MType, w_in::VType; kernel::Symbol=:GivensUpDown, 
-                              pruning::Symbol=:first, caratheodory_correction::Bool=true, 
-                              return_error::Bool=false, errnorm::Function=norm, zero_tol::Real=1e-16, 
-                              progress::Bool=false, kernel_kwargs...
-    ) where MType<:AbstractMatrix{T} where VType<:AbstractVector{T} where T
+function caratheodory_pruning(V, w_in; kernel=GivensUpDowndater, 
+                              pruning=:first, caratheodory_correction=true, 
+                              return_error=false, errnorm=norm, zero_tol=1e-16, 
+                              progress=false, kernel_kwargs...) 
 
     M, N = size(V)
     if M < N
