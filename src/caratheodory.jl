@@ -2,31 +2,37 @@
 `caratheodory_pruning(V, w_in, kernel_downdater, prune_weights![; caratheodory_correction=true, progress=false, zero_tol=1e-16, return_error=false, errnorm=norm])`
 
 Base method for Caratheodory pruning of the matrix `V` and weights `w_in`.
-Returns a new set of weights, `w`, and a set of indices, `inds`, such that
-`w_in` only has nonzero elements at the indices, `inds`, and
-- if `size(V,1) > size(V,2)`, `Vᵀw_in - V[inds,:]ᵀw_in[inds] ≈ 0`
-- if `size(V,1) < size(V,2)`, `V w_in - V[inds,:] w_in[inds] ≈ 0`
+Returns a new set of weights, `w`, a set of indices, `inds`, and an error
+`err` such that `w` only has nonzero elements at the indices, `inds`, and
+- if `size(V,1) > size(V,2)`, `||Vᵀw_in - V[inds,:]ᵀw_in[inds]|| = err ≈ 0`
+- if `size(V,1) < size(V,2)`, `||V w_in - V[inds,:] w_in[inds]|| = err ≈ 0`
+Note that if `return_error=false` and `caratheodory_correction=false`, the
+error is not computed and a default return value of 0.0 is used.
 
 Uses the `kernel_downdater` object to generate kernel vectors for pruning,
 and the `prune_weights!` method to prune weights after kernel vectors have
 been formed.
 
-If `caratheodory_correction=true`, then uses a linear solve at the end to reduce
+If `caratheodory_correction=true`, uses a linear solve at the end to reduce
 error in the moments.
 
 If `progress=true`, displays a progress bar.
 
 `zero_tol` determines the tolerance for a weight equaling zero.
 
-If `return_error=true`, returns an additional float of moment errors at the
-end of the procedure.
+If `return_error=true` or `caratheodory_correction=true`, computes the 
+corresponding errors in moments, `err`. If both `return_error` and
+`caratheodory_correction` are set to `false`, `err` is set to 0.0.
 
 `errornorm` is the method called on the truth moments vs computed moments
 to evaluate final error, only used if `caratheodory_correction=true` 
 or `return_error=true`. Defaults to LinearAlgebra.jl's norm method.
 """
-function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector, kernel_downdater::KernelDowndater, prune_weights!::Function; 
-                              caratheodory_correction=true, progress=false, zero_tol=1e-16, return_error=false, errnorm=norm)
+function caratheodory_pruning(V::MType, w_in::VType, kernel_downdater::KernelDowndater, 
+                              prune_weights!::Function; caratheodory_correction::Bool=true, 
+                              progress::Bool=false, zero_tol::Real=1e-16, return_error::Bool=false, 
+                              errnorm::Function=norm
+    ) where MType<:AbstractMatrix{T} where VType<:AbstractVector{T} where T
     
     M, N = size(V)
     if M < N
@@ -34,10 +40,7 @@ function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector, kernel_do
         M, N = N, M
     end
     if length(w_in) == N # No pruning to do
-        if return_error
-            return w_in, 1:N, 0.0
-        end
-        return w_in, 1:N
+        return (w_in, collect(1:N), 0.0)
     elseif length(w_in) != M # Dimension mismatch
         error("Dimension mismatch between V ($M×$N) and w ($(length(w_in)))")
     end
@@ -124,11 +127,7 @@ function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector, kernel_do
             end
         end
     end
-    if return_error
-        return w, inds, err
-    else
-        return w, inds
-    end
+    return (w::VType, inds::Vector{Int}, err::Float64)
 end
 
 """
@@ -148,8 +147,12 @@ on what is passed in. Options are `:first` or `:minabs`.
 
 See the other `caratheodory_pruning` docstring for info on other arguments.
 """
-function caratheodory_pruning(V::AbstractMatrix, w_in::AbstractVector; kernel=:GivensUpDown, pruning=:first, caratheodory_correction=true, 
-                              return_error=false, errnorm=norm, zero_tol=1e-16, progress=false, kernel_kwargs...)
+function caratheodory_pruning(V::MType, w_in::VType; kernel::Symbol=:GivensUpDown, 
+                              pruning::Symbol=:first, caratheodory_correction::Bool=true, 
+                              return_error::Bool=false, errnorm::Function=norm, zero_tol::Real=1e-16, 
+                              progress::Bool=false, kernel_kwargs...
+    ) where MType<:AbstractMatrix{T} where VType<:AbstractVector{T} where T
+
     M, N = size(V)
     if M < N
         V = transpose(V)

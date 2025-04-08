@@ -7,6 +7,7 @@ using LinearAlgebra: norm
     seed!(1)
     V = rand(100,10)
     w = rand(size(V, 1))
+    @inferred caratheodory_pruning(V, w)
     Vtw = V'w
     tol = 1e-12
     @testset "Kernel choice $kernel" for kernel in (:FullQR, :Givens, :Cholesky, :FullQRUpDown, :GivensUpDown)
@@ -41,6 +42,8 @@ using LinearAlgebra: norm
         w0 = rand(M)
         V = OnDemandMatrix(N,M,i->V0[:,i],by=:cols)
         w_in = OnDemandVector(M,i->w0[i])
+        seed!(1)
+        @inferred caratheodory_pruning(V, w_in)
         seed!(1) # In case of randomness
         w1,inds1 = caratheodory_pruning(V0, w0)
         seed!(1) # In case of randomness
