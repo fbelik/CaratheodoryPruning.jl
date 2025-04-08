@@ -62,9 +62,9 @@ of its transpose. Downdates by forming a new QR factor, which takes
 Form with `FullQRDowndater(V[; k=1])` where `k` is the (maximum) number
 of kernel vectors returned each time `get_kernel_vectors` is called.
 """
-mutable struct FullQRDowndater <: KernelDowndater
-    V::AbstractMatrix
-    Q::Union{AbstractMatrix,QRCompactWYQ}
+mutable struct FullQRDowndater{T <: AbstractMatrix} <: KernelDowndater
+    V::T
+    Q::Union{T, QRCompactWYQ}
     inds::Vector{Int}
     N::Int
     k::Int
@@ -77,7 +77,7 @@ mutable struct FullQRDowndater <: KernelDowndater
         ct = 1
         inds = collect(1:M)
         Q,_ = qr(V)
-        return new(V, Q, inds, N, k)
+        return new{typeof(V)}(V, Q, inds, N, k)
     end
 end
 
@@ -112,9 +112,9 @@ old, full, `Q`-factor, which takes `O(M²)` flops where `V` is an `M x N` matrix
 Form with `GivensDowndater(V[; k=1])` where `k` is the (maximum) number
 of kernel vectors returned each time `get_kernel_vectors` is called.
 """
-mutable struct GivensDowndater <: KernelDowndater
-    V::AbstractMatrix
-    Q::Union{AbstractMatrix,QRCompactWYQ}
+mutable struct GivensDowndater{T <: AbstractMatrix} <: KernelDowndater
+    V::T
+    Q::Union{T, QRCompactWYQ}
     inds::Vector{Int}
     N::Int
     k::Int
@@ -129,7 +129,7 @@ mutable struct GivensDowndater <: KernelDowndater
         inds = collect(1:M)
         Q,_ = qr(V)
         Q = Q[1:M,1:M]
-        return new(V, Q, inds, N, k)
+        return new{typeof(V)}(V, Q, inds, N, k)
     end
 end
 
@@ -176,19 +176,19 @@ to `true`, will take `O(N³ + MN²)` flops instead of `O(N³ + MN)`.
 
 From testing, seems to have minimal error accumulation if `pct_full_qr ≥ 10.0`.
 """
-mutable struct CholeskyDowndater <: KernelDowndater
-    V::AbstractMatrix
-    Q::AbstractMatrix
-    D::AbstractMatrix
-    x::AbstractVector
-    C::AbstractMatrix
+mutable struct CholeskyDowndater{TV <: AbstractMatrix, TM <: AbstractMatrix, TVx <: AbstractVector, TVi <: AbstractVector{<:Int}} <: KernelDowndater
+    V::TV
+    Q::TM
+    D::TM
+    x::TVx
+    C::TM
     inds::Vector{Int}
     ct::Int
     m::Int
     N::Int
     k::Int
     full_Q::Bool
-    full_forced_inds::AbstractVector{<:Int}
+    full_forced_inds::TVi
     SM_tol::Float64
     function CholeskyDowndater(V::AbstractMatrix; k=1, pct_full_qr=10.0, SM_tol=1e-6, full_Q=false)
         M, N = size(V)
@@ -220,7 +220,11 @@ mutable struct CholeskyDowndater <: KernelDowndater
                 full_forced_inds[i] = val
             end
         end
-        return new(V, Q, D, x, C, inds, ct, m, N, k, full_Q, full_forced_inds, SM_tol)
+        TV = typeof(V)
+        TM = typeof(Q)
+        TVx = typeof(x)
+        TVi = typeof(full_forced_inds)
+        return new{TV, TM, TVx, TVi}(V, Q, D, x, C, inds, ct, m, N, k, full_Q, full_forced_inds, SM_tol)
     end
 end
 
@@ -317,10 +321,10 @@ Form with `FullQRUpDowndater(V[; ind_order=randperm(size(V,1)), k=1])`.
 `ind_order` is the order in which the indices are added. `k` is the 
 (maximum) number of kernel vectors returned each time `get_kernel_vectors` is called. 
 """
-mutable struct FullQRUpDowndater <: KernelDowndater
-    V::AbstractMatrix
-    Q::Union{AbstractMatrix,QRCompactWYQ}
-    ind_order::AbstractVector{Int}
+mutable struct FullQRUpDowndater{T <: AbstractMatrix, Ti <: AbstractVector{Int}} <: KernelDowndater
+    V::T
+    Q::Union{T,QRCompactWYQ}
+    ind_order::Ti
     inds::Vector{Int}
     ct::Int
     m::Int
@@ -336,7 +340,9 @@ mutable struct FullQRUpDowndater <: KernelDowndater
         # Allocate arrays
         inds = ind_order[1:(N+k)]
         Q,_ = qr(view(V, inds, 1:N))
-        return new(V, Q, ind_order, inds, ct, m, N, k)
+        T = typeof(V)
+        Ti = typeof(ind_order)
+        return new{T, Ti}(V, Q, ind_order, inds, ct, m, N, k)
     end
 end
 
@@ -392,17 +398,17 @@ Form with `GivensUpDowndater(V[; ind_order=randperm(size(V,1)), k=1, pct_full_qr
 `pct_full_qr` is the percent of times, linearly spaced, that full QR
 factorizations are performed to prevent error accumulation in `Q`.
 """
-mutable struct GivensUpDowndater <: KernelDowndater
-    V::AbstractMatrix
-    Q::AbstractMatrix
-    R::AbstractMatrix
-    ind_order::AbstractVector{Int}
+mutable struct GivensUpDowndater{TV <: AbstractMatrix, TQR <: AbstractMatrix, Tio, Tffi} <: KernelDowndater
+    V::TV
+    Q::TQR
+    R::TQR
+    ind_order::Tio
     inds::Vector{Int}
     ct::Int
     m::Int
     N::Int
     k::Int
-    full_forced_inds::AbstractVector{<:Int}
+    full_forced_inds::Tffi
     function GivensUpDowndater(V::AbstractMatrix; ind_order=1:(size(V,1)), k=1, pct_full_qr=2.0)
         M, N = size(V)
         m = M - N
@@ -419,7 +425,8 @@ mutable struct GivensUpDowndater <: KernelDowndater
         @assert (0.0 <= pct_full_qr <= 100.0)
         fullQR_forced = floor(Int, m * pct_full_qr / 100)
         full_forced_inds = unique([floor(Int, i) for i in range(m+1, 1, length=fullQR_forced+2)[2:fullQR_forced+1]]) 
-        return new(V, Q, R, ind_order, inds, ct, m, N, k, full_forced_inds)
+        TV, TQR, Tio, Tffi = typeof(V), typeof(Q), typeof(ind_order), typeof(full_forced_inds)
+        return new{TV, TQR, Tio, Tffi}(V, Q, R, ind_order, inds, ct, m, N, k, full_forced_inds)
     end
 end
 
