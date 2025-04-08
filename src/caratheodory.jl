@@ -46,8 +46,7 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
     if isa(V, OnDemandMatrix) && V.cols
         @warn "Performance will be slow with current OnDemandMatrix implementation \n         For better performance, transpose OnDemandMatrix storage"
     end
-    T = promote_type(Float64, eltype(w_in), eltype(V))
-    w = T.(w_in)
+    w = copy(w_in)
     m = M-N
     ct = 1
     err = 0.0
