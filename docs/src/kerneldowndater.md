@@ -13,12 +13,12 @@ where ``\alpha`` is a constant chosen to zero out one of the weights while keepi
 However, in Carathéodory pruning, at each step, ``S`` is typically only changed by removing (or sometimes adding) a few elements at a time.
 Thus, it can be wasteful to fully recompute the QR decomposition at each step. 
 
-`CaratheodoryPruning.jl` comes with several built-in Downdater options. They can be easily used by calling `caratheodory_pruning(V, w_in, kernel=:KERNEL)`, replacing `:KERNEL` with the appropriate symbol. 
+`CaratheodoryPruning.jl` comes with several built-in Downdater options. They can be easily used by calling `caratheodory_pruning(V, w_in, kernel=KERNEL)`, replacing `KERNEL` with the appropriate method. 
 
 To implement your own `KernelDowndater` type, create a struct that inherits from KernelDowndater, and implement the necessary methods.
 ```julia
-struct MyKernelDowndater <: KernelDowndater
-    V::AbstractMatrix
+struct MyKernelDowndater{TV <: AbstractMatrix} <: KernelDowndater
+    V::TV
     # Other necessary components
 end
 
@@ -39,11 +39,9 @@ kd = MyKernelDowndater(V, additional_args)
 caratheodory_pruning(V, w_in, kd, prune_weights_first!)
 ```
 
-Below are the available `KernelDowndater` options implemented in `CaratheodoryPruning.jl`.
+Below are the available `KernelDowndater` options implemented in `CaratheodoryPruning.jl`. Note that the default `KernelDowndater` is the `GivensUpDowndater`
 
 ### FullQRDowndater
-
-Access with the kernel symbols `:FullQRDowndater` or `:FullQR`.
 
 ```@docs
 FullQRDowndater
@@ -51,15 +49,11 @@ FullQRDowndater
 
 ### GivensDowndater
 
-Access with the kernel symbols `:GivensDowndater` or `:Givens`.
-
 ```@docs
 GivensDowndater
 ```
 
 ### CholeskyDowndater
-
-Access with the kernel symbols `:CholeskyDowndater` or `:Cholesky`.
 
 ```@docs
 CholeskyDowndater
@@ -67,15 +61,11 @@ CholeskyDowndater
 
 ### FullQRUpDowndater
 
-Access with the kernel symbols `:FullQRUpDowndater` or `:FullQRUpDown`.
-
 ```@docs
 FullQRUpDowndater
 ```
 
 ### GivensUpDowndater
-
-Access with the kernel symbols `:GivensUpDowndater` or `:GivensUpDown`.
 
 ```@docs
 GivensUpDowndater

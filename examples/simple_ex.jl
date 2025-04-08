@@ -10,11 +10,11 @@ w = rand(M)
 η = V'w
 
 w_pruned, inds = caratheodory_pruning(V, w) # GivensUpDown Method
-# w_pruned, inds = caratheodory_pruning(V, w, kernel=:FullQR)
-# w_pruned, inds = caratheodory_pruning(V, w, kernel=:Givens)
-# w_pruned, inds = caratheodory_pruning(V, w, kernel=:Cholesky)
-# w_pruned, inds = caratheodory_pruning(V, w, kernel=:FullQRUpDown)
-# w_pruned, inds = caratheodory_pruning(V, w, kernel=:GivensUpDown)
+# w_pruned, inds = caratheodory_pruning(V, w, kernel=FullQRDowndater)
+# w_pruned, inds = caratheodory_pruning(V, w, kernel=:GivensDowndater)
+# w_pruned, inds = caratheodory_pruning(V, w, kernel=:CholeskyDowndater)
+# w_pruned, inds = caratheodory_pruning(V, w, kernel=:FullQRUpDowndater)
+# w_pruned, inds = caratheodory_pruning(V, w, kernel=:GivensUpDowndater)
 
 η_comp = V[inds,:]' * w_pruned[inds]
 
