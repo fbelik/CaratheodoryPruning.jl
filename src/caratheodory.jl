@@ -46,7 +46,8 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
     if isa(V, OnDemandMatrix) && V.cols
         @warn "Performance will be slow with current OnDemandMatrix implementation \n         For better performance, transpose OnDemandMatrix storage"
     end
-    w = copy(w_in)
+    T = promote_type(Float64, eltype(w_in), eltype(V))
+    w = T.(w_in)
     m = M-N
     ct = 1
     err = 0.0
@@ -134,19 +135,20 @@ end
 
 Helper method for calling the base `caratheodory_pruning` method.
 
-Takes in a symbol for `kernel`, and forms a `KernelDowndater` object depending
-on what is passed in. Also passes additional kwargs into the `KernelDowndater`:
-
+Takes in a method, `kernel`, to form a `KernelDowndater` object.
 Options include `FullQRDowndater`, `GivensDowndater`, `CholeskyDowndater`, 
 `FullQRUpDowndater`, and `GivensUpDownDater`.
 
-Takes in a symbol for `pruning`, and chooses a pruning method depending
-on what is passed in. Options are `:first` or `:minabs`.
+Additional kwargs are passed into the `KernelDowndater` constructor.
+
+Takes in a pruning method for `pruning`, current implemented options
+include `prune_weights_first!` and `prune_weights_minabs!`. These methods
+must use a set of kernel vectors to prune elements of the weight vector.
 
 See the other `caratheodory_pruning` docstring for info on other arguments.
 """
 function caratheodory_pruning(V, w_in; kernel=GivensUpDowndater, 
-                              pruning=:first, caratheodory_correction=true, 
+                              pruning=prune_weights_first!, caratheodory_correction=true, 
                               return_error=false, errnorm=norm, zero_tol=1e-16, 
                               progress=false, kernel_kwargs...) 
 
@@ -155,14 +157,6 @@ function caratheodory_pruning(V, w_in; kernel=GivensUpDowndater,
         V = transpose(V)
     end
     kernel_downdater = kernel(V; kernel_kwargs...)
-    prune_weights! = begin
-        if pruning == :first
-            prune_weights_first!
-        elseif pruning == :minabs
-            prune_weights_minabs!
-        else
-            error("Unrecognized pruning choice: $(pruning)")
-        end
-    end
+    prune_weights! = pruning
     return caratheodory_pruning(V, w_in, kernel_downdater, prune_weights!, caratheodory_correction=caratheodory_correction, return_error=return_error, errnorm=errnorm, zero_tol=zero_tol, progress=progress)
 end
