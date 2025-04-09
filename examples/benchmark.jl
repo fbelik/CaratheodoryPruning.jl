@@ -4,11 +4,11 @@ using ProgressBars
 using Random: seed!
 
 
-opts = (FullQR = Dict(:kernel => :FullQR),
-        GivensQR = Dict(:kernel => :Givens),
-        Cholesky = Dict(:kernel => :Cholesky),
-        FullQRUpDown = Dict(:kernel => :FullQRUpDown),
-        GivensUpDown = Dict(:kernel => :GivensUpDown)
+opts = (FullQR = Dict(:kernel => FullQRDowndater),
+        GivensQR = Dict(:kernel => GivensDowndater),
+        Cholesky = Dict(:kernel => CholeskyDowndater),
+        FullQRUpDown = Dict(:kernel => FullQRUpDowndater),
+        GivensUpDown = Dict(:kernel => GivensUpDowndater)
 )
 
 N = 2 ^ 3

@@ -28,11 +28,10 @@ corresponding errors in moments, `err`. If both `return_error` and
 to evaluate final error, only used if `caratheodory_correction=true` 
 or `return_error=true`. Defaults to LinearAlgebra.jl's norm method.
 """
-function caratheodory_pruning(V::MType, w_in::VType, kernel_downdater::KernelDowndater, 
-                              prune_weights!::Function; caratheodory_correction::Bool=true, 
-                              progress::Bool=false, zero_tol::Real=1e-16, return_error::Bool=false, 
-                              errnorm::Function=norm
-    ) where MType<:AbstractMatrix{T} where VType<:AbstractVector{T} where T
+function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater, 
+                              prune_weights!::Function; caratheodory_correction=true, 
+                              progress::Bool=false, zero_tol=1e-16, return_error=false, 
+                              errnorm::Function=norm) 
     
     M, N = size(V)
     if M < N
@@ -127,59 +126,36 @@ function caratheodory_pruning(V::MType, w_in::VType, kernel_downdater::KernelDow
             end
         end
     end
-    return (w::VType, inds::Vector{Int}, err::Float64)
+    return w, inds, err
 end
 
 """
-`caratheodory_pruning(V, w_in[; kernel=:GivensUpDown, pruning=:first, caratheodory_correction=true, return_error=false, errnorm=norm, zero_tol=1e-16, progress=false, kernel_kwargs...])`
+`caratheodory_pruning(V, w_in[; kernel=GivensUpDownDater, pruning=:first, caratheodory_correction=true, return_error=false, errnorm=norm, zero_tol=1e-16, progress=false, kernel_kwargs...])`
 
 Helper method for calling the base `caratheodory_pruning` method.
 
-Takes in a symbol for `kernel`, and forms a `KernelDowndater` object depending
-on what is passed in. Also passes additional kwargs into the `KernelDowndater`:
+Takes in a method, `kernel`, to form a `KernelDowndater` object.
+Options include `FullQRDowndater`, `GivensDowndater`, `CholeskyDowndater`, 
+`FullQRUpDowndater`, and `GivensUpDownDater`.
 
-Options include `:FullQRDowndater` or `:FullQR`, `:GivensDowndater` or `:Givens`,
-`:CholeskyDowndater` or `:Cholesky`, `:FullQRUpDowndater` or `:FullQRUpDown`,
-and `:GivensUpDownDater` or `:GivensUpDown`.
+Additional kwargs are passed into the `KernelDowndater` constructor.
 
-Takes in a symbol for `pruning`, and chooses a pruning method depending
-on what is passed in. Options are `:first` or `:minabs`.
+Takes in a pruning method for `pruning`, current implemented options
+include `prune_weights_first!` and `prune_weights_minabs!`. These methods
+must use a set of kernel vectors to prune elements of the weight vector.
 
 See the other `caratheodory_pruning` docstring for info on other arguments.
 """
-function caratheodory_pruning(V::MType, w_in::VType; kernel::Symbol=:GivensUpDown, 
-                              pruning::Symbol=:first, caratheodory_correction::Bool=true, 
-                              return_error::Bool=false, errnorm::Function=norm, zero_tol::Real=1e-16, 
-                              progress::Bool=false, kernel_kwargs...
-    ) where MType<:AbstractMatrix{T} where VType<:AbstractVector{T} where T
+function caratheodory_pruning(V, w_in; kernel=GivensUpDowndater, 
+                              pruning=prune_weights_first!, caratheodory_correction=true, 
+                              return_error=false, errnorm=norm, zero_tol=1e-16, 
+                              progress=false, kernel_kwargs...) 
 
     M, N = size(V)
     if M < N
         V = transpose(V)
     end
-    kernel_downdater = begin
-        if kernel in (:FullQRDowndater, :FullQR)
-            FullQRDowndater(V; kernel_kwargs...)
-        elseif kernel in (:GivensDowndater, :Givens)
-            GivensDowndater(V; kernel_kwargs...)
-        elseif kernel in (:CholeskyDowndater, :Cholesky)
-            CholeskyDowndater(V; kernel_kwargs...)
-        elseif kernel in (:FullQRUpDowndater, :FullQRUpDown)
-            FullQRUpDowndater(V; kernel_kwargs...)
-        elseif kernel in (:GivensUpDowndater, :GivensUpDown)
-            GivensUpDowndater(V; kernel_kwargs...)
-        else
-            error("Unrecognized kernel choice: $(kernel)")
-        end
-    end
-    prune_weights! = begin
-        if pruning == :first
-            prune_weights_first!
-        elseif pruning == :minabs
-            prune_weights_minabs!
-        else
-            error("Unrecognized pruning choice: $(pruning)")
-        end
-    end
+    kernel_downdater = kernel(V; kernel_kwargs...)
+    prune_weights! = pruning
     return caratheodory_pruning(V, w_in, kernel_downdater, prune_weights!, caratheodory_correction=caratheodory_correction, return_error=return_error, errnorm=errnorm, zero_tol=zero_tol, progress=progress)
 end

@@ -10,12 +10,11 @@ These can be computed by the `get_alpha_k0s` method.
 CaratheodoryPruning.get_alpha_k0s
 ```
 
-`CaratheodoryPruning.jl` comes with several built-in pruning options. They can be easily used by calling `caratheodory_pruning(V, w_in, pruning=:PRUNING)`, replacing `:PRUNING` with the appropriate symbol. 
+`CaratheodoryPruning.jl` comes with several built-in pruning options. They can be easily used by calling `caratheodory_pruning(V, w_in, pruning=PRUNING)`, replacing `PRUNING` with the appropriate method. 
 
 ### Prune first
 
 Prunes using the first kernel vector in `kvecs`.
-Access with the pruning symbol `:first`.
 
 ```@docs
 prune_weights_first!
@@ -23,7 +22,6 @@ prune_weights_first!
 ### Prune Minimum Absolute Value
 
 Prunes according to the kernel vector in `kvecs` which results in the minimum absolute value multiple added.
-Access with the pruning symbol `:minabs`.
 
 ```@docs
 prune_weights_minabs!

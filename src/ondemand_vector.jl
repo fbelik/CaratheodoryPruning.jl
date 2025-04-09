@@ -52,7 +52,7 @@ function Base.show(io::Core.IO, M::OnDemandVector{T}) where T
 end
 
 function Base.copy(M::OnDemandVector{T}) where T
-    return OnDemandVector(M.n, copy(M.elems), M.elemfun)
+    return OnDemandVector{T}(M.n, copy(M.elems), M.elemfun)
 end
 
 function Base.getindex(M::OnDemandVector, idx::Vararg{Int,1})

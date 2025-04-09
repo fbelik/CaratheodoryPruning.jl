@@ -1,5 +1,5 @@
 """
-`OnDemandMatrix{T} <: AbstractMatrix{T} where T`
+`OnDemandMatrix{T,TV<:AbstractVector{T}} <: AbstractMatrix{T}`
 
 Matrix subtype for which only a subset of the columns
 or rows (determined by if `cols=true`) need to be stored
@@ -24,44 +24,39 @@ To "forget" or erase a given column or row, indexed by `i`, call
 Useful for use with `caratheodory_pruning` with the kernel option `:GivensUpDown`
 where only a subset of rows/columns are required at a time.
 """
-struct OnDemandMatrix{T} <: AbstractMatrix{T}
+struct OnDemandMatrix{T,TV<:AbstractVector{T}} <: AbstractMatrix{T}
     n::Int
     m::Int
-    vecs::Dict{Int,AbstractVector{T}}
+    vecs::Dict{Int,TV}
     vecfun::Function
     cols::Bool
-    addl::Dict{Int,Any}
 end
 
 """
-`OnDemandMatrix(n::Int, m::Int, vecfun::Function; by=:cols, T=Float64)`
+`OnDemandMatrix(n::Int, m::Int, vecfun::Function; by=:cols, T=Float64, TV=Vector{T})`
 
 Forms an `n×m` `OnDemandMatrix` whose columns (or rows if `by==:rows`) are
-formed when needed by `vecfun(i::Int)`. Default type is `T=Float64`.
+formed when needed by `vecfun(i::Int)`. Default eltype is `T=Float64` and
+default vector type is `TV=Vector{Float64}`.
 """
-function OnDemandMatrix(n::Int, m::Int, vecfun::Function; by=:cols, T=Float64)
+function OnDemandMatrix(n::Int, m::Int, vecfun::Function; by=:cols, T=Float64, TV=Vector{T})
     @assert (by in (:rows, :cols)) "by argument must be either :cols or :rows"
     vecs = Dict{Int,AbstractVector{T}}()
-    addl = Dict{Int,Any}()
-    return OnDemandMatrix{T}(n, m, vecs, vecfun, by==:cols, addl)
+    return OnDemandMatrix{T,TV}(n, m, vecs, vecfun, by==:cols)
 end
 
 function Base.size(M::OnDemandMatrix)
     return (M.n,M.m)
 end
 
-function Base.show(io::Core.IO, mime::MIME"text/plain", M::OnDemandMatrix{T}) where T
-    stored = length(M.vecs)
-    print(io, "$(size(M,1))x$(size(M,2)) OnDemandMatrix{$T} with $(stored) stored $((M.cols ? "columns" : "rows"))")
+function Base.show(io::Core.IO, mime::MIME"text/plain", M::OnDemandMatrix)
+    Base.show(io, M)
 end
 
 # TODO: Is this the correct way to separate @show from print calls?
-function Base.show(io::Core.IO, M::OnDemandMatrix{T}) where T
-    print(io, "OnDemandMatrix{$T}(")
-    print(io, "vecs=$(M.vecs),")
-    print(io, "vecfun=$(M.vecfun),")
-    print(io, "cols=$(M.cols),")
-    print(io, "addl=$(M.addl))")
+function Base.show(io::Core.IO, M::OnDemandMatrix)
+    stored = length(M.vecs)
+    print(io, "$(size(M,1))x$(size(M,2)) $(typeof(M)) with $(stored) stored $((M.cols ? "columns" : "rows"))")
 end
 
 function Base.getindex(M::OnDemandMatrix, idx::Vararg{Int,2})
@@ -69,27 +64,15 @@ function Base.getindex(M::OnDemandMatrix, idx::Vararg{Int,2})
     if M.cols
         if !(j in keys(M.vecs))
             vec = M.vecfun(j)
-            if vec isa Tuple{<:AbstractVector,<:Any}
-                push!(M.vecs, j => vec[1])
-                push!(M.addl, j => vec[2])
-                return vec[1][i]
-            else
-                push!(M.vecs, j => vec)
-                return vec[i]
-            end
+            push!(M.vecs, j => vec)
+            return vec[i]
         end
         return M.vecs[j][i]
     else
         if !(i in keys(M.vecs))
             vec = M.vecfun(i)
-            if vec isa Tuple{<:AbstractVector,<:Any}
-                push!(M.vecs, i => vec[1])
-                push!(M.addl, i => vec[2])
-                return vec[1][j]
-            else
-                push!(M.vecs, i => vec)
-                return vec[j]
-            end
+            push!(M.vecs, i => vec)
+            return vec[j]
         end
         return M.vecs[i][j]
     end
@@ -104,26 +87,19 @@ or row is not stored, will do nothing.
 """
 function forget!(M::OnDemandMatrix, i::Int)
     pop!(M.vecs, i, nothing)
-    pop!(M.addl, i, nothing)
     M
 end
 
-function Base.transpose(M::OnDemandMatrix{T}) where T
-    return OnDemandMatrix{T}(size(M,2), size(M,1), M.vecs, M.vecfun, !M.cols, M.addl)
+function Base.transpose(M::OnDemandMatrix{T,TV}) where T where TV
+    return OnDemandMatrix{T,TV}(size(M,2), size(M,1), M.vecs, M.vecfun, !M.cols)
 end
 
 function Base.view(M::OnDemandMatrix, i::Int, js::Union{<:AbstractVector{Int},Colon})
     if (!M.cols)
         if !(i in keys(M.vecs))
             vec = M.vecfun(i)
-            if vec isa Tuple{<:AbstractVector,<:Any}
-                push!(M.vecs, i => vec[1])
-                push!(M.addl, i => vec[2])
-                return view(vec[1], js)
-            else
-                push!(M.vecs, i => vec)
-                return view(vec, js)
-            end
+            push!(M.vecs, i => vec)
+            return view(vec, js)
         end
         return view(M.vecs[i], js)
     else
@@ -136,14 +112,8 @@ function Base.view(M::OnDemandMatrix, is::Union{<:AbstractVector{Int},Colon}, j:
     if (M.cols)
         if !(j in keys(M.vecs))
             vec = M.vecfun(j)
-            if vec isa Tuple{<:AbstractVector,<:Any}
-                push!(M.vecs, j => vec[1])
-                push!(M.addl, j => vec[2])
-                return view(vec[1], is)
-            else
-                push!(M.vecs, j => vec)
-                return view(vec, is)
-            end
+            push!(M.vecs, j => vec)
+            return view(vec, is)
         end
         return view(M.vecs[j], is)
     else
