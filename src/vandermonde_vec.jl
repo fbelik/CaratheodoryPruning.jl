@@ -1,6 +1,8 @@
 """
 `VandermondeVector{T,TV<:AbstractVector{T},TP} <: AbstractVector{T}`
 
+`v = VandermondeVector(vec, [pt=nothing])`
+
 Vector subtype useful for storing a slice (row or column) of a Vandermonde 
 matrix along with the point used to form the slice. The slice is stored in 
 `vec` and the point is stored in `pt`. Behaves like a normal vector with 
@@ -12,16 +14,9 @@ Given `v = VandermondeVector(vec, pt)`, the point can be accessed with
 struct VandermondeVector{T,TV<:AbstractVector{T},TP} <: AbstractVector{T}
     vec::TV
     pt::TP
-end
-
-"""
-`VandermondeVector(vec::TV, addl::TP) where TV<:AbstractVector{T} where T where TP`
-
-Forms a `VandermondeVector` with contents `vec` and corresponding point
-`pt`.
-"""
-function VandermondeVector(vec::TV, pt::TP=nothing) where TV<:AbstractVector{T} where T where TP
-    return VandermondeVector{T,TV,TP}(vec,pt)
+    function VandermondeVector(vec::TV, pt::TP=nothing) where TV<:AbstractVector{T} where T where TP
+        return new{T,TV,TP}(vec,pt)
+    end
 end
 
 function Base.size(v::VandermondeVector)
