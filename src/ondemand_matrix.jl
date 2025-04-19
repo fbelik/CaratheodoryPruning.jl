@@ -33,15 +33,26 @@ struct OnDemandMatrix{T,TV<:AbstractVector{T}} <: AbstractMatrix{T}
 end
 
 """
-`OnDemandMatrix(n::Int, m::Int, vecfun::Function; by=:cols, T=Float64, TV=Vector{T})`
+`OnDemandMatrix(n::Int, m::Int, vecfun::Function; by=:cols, T=nothing, TV=nothing)`
 
 Forms an `n×m` `OnDemandMatrix` whose columns (or rows if `by==:rows`) are
-formed when needed by `vecfun(i::Int)`. Default eltype is `T=Float64` and
-default vector type is `TV=Vector{Float64}`.
+formed when needed by `vecfun(i::Int)`. If `T` and `TV` are not passed in,
+then `vecfun(1)` is called to determine the types. If one of the two is provided,
+the other is inferred.
 """
-function OnDemandMatrix(n::Int, m::Int, vecfun::Function; by=:cols, T=Float64, TV=Vector{T})
+function OnDemandMatrix(n::Int, m::Int, vecfun::Function; by=:cols, T=nothing, TV=nothing)
     @assert (by in (:rows, :cols)) "by argument must be either :cols or :rows"
-    vecs = Dict{Int,AbstractVector{T}}()
+    if isnothing(T) && isnothing(TV)
+        ex = vecfun(1)
+        T = eltype(ex)
+        TV = typeof(ex)
+    elseif isnothing(T)
+        T = eltype(TV)
+    elseif isnothing(TV)
+        ex = vecfun(1)
+        TV = typeof(ex)
+    end
+    vecs = Dict{Int,TV}()
     return OnDemandMatrix{T,TV}(n, m, vecs, vecfun, by==:cols)
 end
 

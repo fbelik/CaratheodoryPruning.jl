@@ -21,6 +21,15 @@ using LinearAlgebra: norm
             end
         end
     end
+    @testset "VandermondeVector" begin
+        vect = collect(1.0:1:5)
+        pt = collect(1.0:1:1)
+        v = VandermondeVector(vect, pt)
+        @test v == vect
+        @test v ./ v == ones(5)
+        @test v.pt == pt
+        @test getpt(v) == pt
+    end
     @testset "OnDemandMatrix $selection-wise" for selection in (:cols,:rows)
         M = OnDemandMatrix(5, 5, i -> [1.0*(i==j) for j in 1:5], by=selection, T=Float64)
         M[2,2]
