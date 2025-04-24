@@ -1,7 +1,7 @@
 using CaratheodoryPruning
 using Test
 using Random: seed!
-using LinearAlgebra: norm
+using LinearAlgebra: norm, I
 
 @testset "CaratheodoryPruning.jl" begin
     seed!(1)
@@ -71,5 +71,13 @@ using LinearAlgebra: norm
         @test norm(V[:,inds3]*w3[inds3] .- V0[:,inds1]*w1[inds1]) <= 1e-6
         @test length(keys(V.vecs)) == N
         @test all([length(V.vecs[i]) == M for i in 1:N])
+    end
+
+    @testset "Extra Pruning" begin
+        V = Matrix{Float64}(I, (10,10))
+        V[end,end] = 1e-16
+        w_in = ones(10)
+        w, inds = caratheodory_pruning(V, w_in, extra_pruning=true)
+        @test !(10 in inds)
     end
 end

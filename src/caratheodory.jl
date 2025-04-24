@@ -1,5 +1,5 @@
 """
-`caratheodory_pruning(V, w_in, kernel_downdater, prune_weights![; caratheodory_correction=true, progress=false, zero_tol=1e-16, return_error=false, errnorm=norm])`
+`caratheodory_pruning(V, w_in, kernel_downdater, prune_weights![; caratheodory_correction=true, progress=false, zero_tol=1e-16, return_error=false, errnorm=norm, extra_pruning=false, sval_tol=1e-15])`
 
 Base method for Caratheodory pruning of the matrix `V` and weights `w_in`.
 Returns a new set of weights, `w`, a set of indices, `inds`, and an error
@@ -27,24 +27,29 @@ corresponding errors in moments, `err`. If both `return_error` and
 `errornorm` is the method called on the truth moments vs computed moments
 to evaluate final error, only used if `caratheodory_correction=true` 
 or `return_error=true`. Defaults to LinearAlgebra.jl's norm method.
+
+If `extra_pruning=true`, additional pruning is attempted after the initial
+pruning to find a further reduced rule (less points than number of moments).
+This pruning is determined by `sval_tol` and `zero_tol` as it checks if the
+pruned Vandermonde matrix has singular values close to zero.
 """
 function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater, 
                               prune_weights!::Function; caratheodory_correction=true, 
                               progress::Bool=false, zero_tol=1e-16, return_error=false, 
-                              errnorm::Function=norm) 
+                              errnorm::Function=norm, extra_pruning=false, sval_tol=1e-15) 
     
     M, N = size(V)
     if M < N
         V = transpose(V)
         M, N = N, M
     end
-    if length(w_in) == N # No pruning to do
-        return (w_in, collect(1:N), 0.0)
-    elseif length(w_in) != M # Dimension mismatch
+    if length(w_in) != M # Dimension mismatch
         error("Dimension mismatch between V ($M×$N) and w ($(length(w_in)))")
     end
     if isa(V, OnDemandMatrix) && V.cols
-        @warn "Performance will be slow with current OnDemandMatrix implementation \n         For better performance, transpose OnDemandMatrix storage"
+        msg = "Performance will be slow with current OnDemandMatrix implementation \n"
+        msg *= "         For better performance, transpose OnDemandMatrix storage"
+        @warn msg
     end
     w = copy(w_in)
     m = M-N
@@ -92,6 +97,11 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
         update(pbar, m - pbar.current)
     end
     inds = get_inds(kernel_downdater)
+    # Prune extra
+    if extra_pruning
+        extra_pruning!(V, w, inds, zero_tol, sval_tol)
+    end
+    # Compute error
     if caratheodory_correction || return_error
         η_comp = zeros(N)
         for ind in inds
@@ -102,28 +112,31 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
     end
     # Try to correct weights
     if caratheodory_correction
+        viewVt = transpose(view(V, inds, 1:N))
+        w_cor = similar(view(w, inds))
         try
-            w_cor = transpose(view(V,inds,1:N)) \ η_truth
-            # Check if any negative entries
-            minentry = minimum(w_cor)
-            if minentry <= 0
-                w_cor .*= (w_cor .>= 0)
-            end
-            η_comp .= 0.0
-            for (i,ind) in enumerate(inds)
-                η_comp .+= (w_cor[i] .* view(V, ind, :))
-            end
-            new_err = errnorm(η_comp .- η_truth)
-            if new_err < err
-                w[inds] .= w_cor
-                err = new_err
-            end
+            w_cor .= viewVt \ η_truth
         catch e
-            println("Exception during Caratheodory correction: ")
-            println(e)
-            if !(isa(e, SingularException))
-                throw(e)
+            if isa(e, SingularException)
+                w_cor .= pinv(viewVt) * η_truth
             end
+            throw(e)
+        end
+        # Check if any negative entries
+        minentry = minimum(w_cor)
+        posinds = (w_cor .> 0)
+        if minentry <= 0
+            w_cor .*= posinds
+        end
+        η_comp .= 0.0
+        for (i,ind) in enumerate(inds)
+            η_comp .+= (w_cor[i] .* view(V, ind, :))
+        end
+        new_err = errnorm(η_comp .- η_truth)
+        if new_err < err
+            w[inds] .= w_cor
+            deleteat!(inds, (.! posinds))
+            err = new_err
         end
     end
     return w, inds, err
@@ -149,7 +162,8 @@ See the other `caratheodory_pruning` docstring for info on other arguments.
 function caratheodory_pruning(V, w_in; kernel=GivensUpDowndater, 
                               pruning=prune_weights_first!, caratheodory_correction=true, 
                               return_error=false, errnorm=norm, zero_tol=1e-16, 
-                              progress=false, kernel_kwargs...) 
+                              progress=false, extra_pruning=false, sval_tol=1e-15,
+                              kernel_kwargs...) 
 
     M, N = size(V)
     if M < N
@@ -157,5 +171,7 @@ function caratheodory_pruning(V, w_in; kernel=GivensUpDowndater,
     end
     kernel_downdater = kernel(V; kernel_kwargs...)
     prune_weights! = pruning
-    return caratheodory_pruning(V, w_in, kernel_downdater, prune_weights!, caratheodory_correction=caratheodory_correction, return_error=return_error, errnorm=errnorm, zero_tol=zero_tol, progress=progress)
+    return caratheodory_pruning(V, w_in, kernel_downdater, prune_weights!, caratheodory_correction=caratheodory_correction, 
+                                return_error=return_error, errnorm=errnorm, zero_tol=zero_tol, progress=progress, 
+                                extra_pruning=extra_pruning, sval_tol=sval_tol)
 end
