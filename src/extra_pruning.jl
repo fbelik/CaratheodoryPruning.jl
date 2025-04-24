@@ -10,11 +10,12 @@ It only halts when `σ_min / σ_max > sval_tol` or when
 `σ_min * α > zero_tol` where `σ_min` is the minimum singular value of 
 `V[inds,:]`, `σ_max` is the maximum singular value of `V[inds,:]`, and 
 `α` is the multiple of the kernel vector that is used to prune the weights.
+
+Returns the error, `err`, induced by the pruning which corresponds to the 
+sum of the trailing singular values multiplied by the factor used to prune.
 """
 function extra_pruning!(V, w, inds, zero_tol=1e-16, sval_tol=1e-15)
-    if isa(inds, AbstractRange)
-        inds = collect(inds)
-    end
+    err = 0.0
     while true
         _,S,Vmat = svd(view(V, inds, :))
         kvec = Vmat[:,end]
@@ -44,8 +45,8 @@ function extra_pruning!(V, w, inds, zero_tol=1e-16, sval_tol=1e-15)
                 inds_delete[i] = true
             end
         end
-
+        err += abs(alpha * S[end])
         deleteat!(inds, inds_delete)
     end
-    return w, inds
+    return err
 end

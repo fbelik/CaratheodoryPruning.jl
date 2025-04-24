@@ -97,10 +97,6 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
         update(pbar, m - pbar.current)
     end
     inds = get_inds(kernel_downdater)
-    # Prune extra
-    if extra_pruning
-        extra_pruning!(V, w, inds, zero_tol, sval_tol)
-    end
     # Compute error
     if caratheodory_correction || return_error
         η_comp = zeros(N)
@@ -109,6 +105,10 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
             η_truth .+= (w_in[ind] .* view(V, ind, :))
         end
         err = errnorm(η_comp .- η_truth)
+    end
+    # Prune extra
+    if extra_pruning
+        err += extra_pruning!(V, w, inds, zero_tol, sval_tol)
     end
     # Try to correct weights
     if caratheodory_correction
