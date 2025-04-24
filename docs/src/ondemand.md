@@ -21,3 +21,11 @@ OnDemandVector
 ```
 
 The method `forget!` works the same for the `OnDemandVector`.
+
+Related to on demand matrices is a `VandermondeVector` which is a thin wrapper for a standard vector which stores one additional piece of information such as the point used to generate the corresponding slice of the Vandermonde matrix.
+
+```@docs
+VandermondeVector
+```
+
+See the Monte Carlo example for use of this.

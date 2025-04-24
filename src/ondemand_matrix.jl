@@ -64,7 +64,6 @@ function Base.show(io::Core.IO, mime::MIME"text/plain", M::OnDemandMatrix)
     Base.show(io, M)
 end
 
-# TODO: Is this the correct way to separate @show from print calls?
 function Base.show(io::Core.IO, M::OnDemandMatrix)
     stored = length(M.vecs)
     print(io, "$(size(M,1))x$(size(M,2)) $(typeof(M)) with $(stored) stored $((M.cols ? "columns" : "rows"))")
@@ -76,14 +75,12 @@ function Base.getindex(M::OnDemandMatrix, idx::Vararg{Int,2})
         if !(j in keys(M.vecs))
             vec = M.vecfun(j)
             push!(M.vecs, j => vec)
-            return vec[i]
         end
         return M.vecs[j][i]
     else
         if !(i in keys(M.vecs))
             vec = M.vecfun(i)
             push!(M.vecs, i => vec)
-            return vec[j]
         end
         return M.vecs[i][j]
     end

@@ -1,7 +1,7 @@
 module CaratheodoryPruning
 
 using LinearAlgebra: 
-    qr, I, givens, lmul!, rmul!, ldiv!, rdiv!, QRCompactWYQ, norm, UpperTriangular, SingularException
+    qr, svd, I, givens, lmul!, rmul!, ldiv!, rdiv!, QRCompactWYQ, norm, UpperTriangular, SingularException
 using Random: randperm
 using ProgressBars: ProgressBar, update
 
@@ -11,6 +11,7 @@ include("ondemand_vector.jl")
 include("vandermonde_vec.jl")
 include("kernel.jl")
 include("pruning_weights.jl")
+include("extra_pruning.jl")
 include("caratheodory.jl")
 
 export OnDemandMatrix
