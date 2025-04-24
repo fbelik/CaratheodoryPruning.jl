@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>MC Example · CaratheodoryPruning.jl</title><meta name="title" content="MC Example · CaratheodoryPruning.jl"/><meta property="og:title" content="MC Example · CaratheodoryPruning.jl"/><meta property="twitter:title" content="MC Example · CaratheodoryPruning.jl"/><meta name="description" content="Documentation for CaratheodoryPruning.jl."/><meta property="og:description" content="Documentation for CaratheodoryPruning.jl."/><meta property="twitter:description" content="Documentation for CaratheodoryPruning.jl."/><script data-outdated-warner src="assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="assets/documenter.js"></script><script src="search_index.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="index.html">CaratheodoryPruning.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="index.html">Background</a></li><li><a class="tocitem" href="kerneldowndater.html">Kernel Downdaters</a></li><li><a class="tocitem" href="pruning.html">Pruning</a></li><li><a class="tocitem" href="ondemand.html">On Demand Arrays</a></li><li class="is-active"><a class="tocitem" href="mc_example.html">MC Example</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href="mc_example.html">MC Example</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href="mc_example.html">MC Example</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/fbelik/CaratheodoryPruning.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/fbelik/CaratheodoryPruning.jl/blob/master/docs/src/mc_example.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Monte-Carlo-Quadrature-Example"><a class="docs-heading-anchor" href="#Monte-Carlo-Quadrature-Example">Monte Carlo Quadrature Example</a><a id="Monte-Carlo-Quadrature-Example-1"></a><a class="docs-heading-anchor-permalink" href="#Monte-Carlo-Quadrature-Example" title="Permalink"></a></h1><p>Consider the problem of integrating a circle with radius 1 centered at the origin in <span>$\mathbb{R}^2$</span>, <span>$C$</span>. One way of doing this is by Monte-Carlo sampling <span>$M$</span> points within the circle IID uniformly randomly, <span>$\{x_i\}_{i=1}^M$</span> and forming the following quadrature rule</p><p class="math-container">\[\int_C f(x) dx \approx \sum_{i=1}^M \frac{\pi}{M} f(x_i).\]</p><p>Suppose we wish to accurately integrate the set of bivariate polynomials of degree at most 4, given by the span of <span>$S = \{1, x, x^2, xy, y^2, \ldots, xy^4, y^5\}$</span> for which <span>$N = |S| = \binom{6}{2} = 15$</span>. This means we can form a 15 point quadrature rule which maintains accuracy of the Monte-Carlo rule on <span>$S$</span>. We can do this through pruning.</p><p>Suppose additionally that <span>$M$</span> is sufficiently large such that we do not wish to store the full set of <span>$M$</span> points in memory. This can be done with an <code>OnDemandMatrix</code> and an <code>OnDemandVector</code>. See the following code for details.</p><pre><code class="language-julia hljs">M = 10000
+p = 4 # Polynomial degree
+d = 2 # in R²
+N = binomial(p+d,d)
+
+
+# Form the Vandermonde matrix OnDemand
+vecfun(i) = begin
+    # Form random point in C
+    pt = 2 .* rand(d) .- 1
+    while sum(pt .^ 2) &lt;= 1
+        pt .= 2 .* rand(d) .- 1
+    end
+    # Evaluate point on basis
+    vec = zeros(N)
+    ct = 1
+    for i in 0:p, j in 0:(p-i)
+        vec[ct] = pt[1] ^ i * pt[2] ^ j
+        ct += 1
+    end
+    # Store the vector and point in a Vandermonde vector
+    return VandermondeVector(vec, pt)
+end
+# Store rows and pts OnDemand
+V = OnDemandMatrix(M, N, vecfun, by=:rows, 
+                   TV=VandermondeVector{Float64, Vector{Float64}, Vector{Float64}})
+
+# Store the initial weights OnDemand
+wfun(i) = begin
+    return π / M
+end
+w_in = OnDemandVector(M, wfun)
+
+# Prune and compute reduced weights
+w, inds, err = caratheodory_pruning(V, w_in)
+
+# Function to evaluate reduced rule
+quadrule(f) = begin
+    res = 0.0
+    for i in inds
+        pt = V.vecs[i].pt
+        wt = w[i]
+        res += wt * f(pt)
+    end
+    return res
+end</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="ondemand.html">« On Demand Arrays</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.5.0 on <span class="colophon-date" title="Thursday 24 April 2025 21:29">Thursday 24 April 2025</span>. Using Julia version 1.10.9.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
