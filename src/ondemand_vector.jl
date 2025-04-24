@@ -55,17 +55,16 @@ function Base.copy(M::OnDemandVector{T}) where T
     return OnDemandVector{T}(M.n, copy(M.elems), M.elemfun)
 end
 
-function Base.getindex(M::OnDemandVector, idx::Vararg{Int,1})
+function Base.getindex(M::OnDemandVector{T}, idx::Vararg{Int,1}) where T
     i, = idx
     if !(i in keys(M.elems))
         val = M.elemfun(i)
         push!(M.elems, i => val)
-        return val
     end
     return M.elems[i]
 end
 
-function Base.setindex!(M::OnDemandVector, v, idx::Vararg{Int,1})
+function Base.setindex!(M::OnDemandVector{T}, v::T, idx::Vararg{Int,1}) where T
     i, = idx
     if i in keys(M.elems)
         M.elems[i] = v

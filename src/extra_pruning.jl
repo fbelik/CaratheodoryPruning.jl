@@ -16,8 +16,22 @@ sum of the trailing singular values multiplied by the factor used to prune.
 """
 function extra_pruning!(V, w, inds, zero_tol=1e-16, sval_tol=1e-15)
     err = 0.0
+    inds_delete = [false for _ in inds]
+    for i in eachindex(inds)
+        if (abs(w[inds[i]]) < zero_tol)
+            w[inds[i]] = 0.0
+            if isa(w, OnDemandVector)
+                forget!(w, inds[i])
+            end
+            if isa(V, OnDemandMatrix)
+                forget!(V, inds[i])
+            end
+            inds_delete[i] = true
+        end
+    end
+    deleteat!(inds, inds_delete)
     while true
-        _,S,Vmat = svd(view(V, inds, :))
+        _ ,S , Vmat = svd(view(V, inds, :))
         kvec = Vmat[:,end]
 
         if (S[end] / S[1]) > sval_tol
