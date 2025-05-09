@@ -31,7 +31,7 @@ function extra_pruning!(V, w, inds, zero_tol=1e-16, sval_tol=1e-15)
     end
     deleteat!(inds, inds_delete)
     while true
-        _ ,S , Vmat = svd(V[inds, :])
+        _, S , Vmat = svd(V[inds, :]')
         kvec = Vmat[:,end]
 
         if (S[end] / S[1]) > sval_tol

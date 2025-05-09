@@ -76,8 +76,13 @@ using LinearAlgebra: norm, I
     @testset "Extra Pruning" begin
         V = Matrix{Float64}(I, (10,10))
         V[end,end] = 1e-16
+        V[end-1,end-1] = 1e-16
         w_in = ones(10)
         w, inds = caratheodory_pruning(V, w_in, extra_pruning=true)
         @test !(10 in inds)
+        @test !(9 in inds)
+        w, inds = caratheodory_pruning(V, w_in, extra_pruning=false)
+        @test (10 in inds)
+        @test (9 in inds)
     end
 end

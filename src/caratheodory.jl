@@ -119,8 +119,9 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
         catch e
             if isa(e, SingularException)
                 w_cor .= pinv(viewVt) * η_truth
+            else
+                throw(e)
             end
-            throw(e)
         end
         # Check if any negative entries
         minentry = minimum(w_cor)

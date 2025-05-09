@@ -1,7 +1,7 @@
 module CaratheodoryPruning
 
 using LinearAlgebra: 
-    qr, svd, I, givens, lmul!, rmul!, ldiv!, rdiv!, QRCompactWYQ, norm, UpperTriangular, SingularException
+    qr, svd, I, givens, lmul!, rmul!, ldiv!, rdiv!, QRCompactWYQ, norm, UpperTriangular, SingularException, pinv
 using Random: randperm
 using ProgressBars: ProgressBar, update
 
