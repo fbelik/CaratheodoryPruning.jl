@@ -4,10 +4,12 @@
 Base method for Caratheodory pruning of the matrix `V` and weights `w_in`.
 Returns a new set of weights, `w`, a set of indices, `inds`, and an error
 `err` such that `w` only has nonzero elements at the indices, `inds`, and
-- if `size(V,1) > size(V,2)`, `||Vᵀw_in - V[inds,:]ᵀw_in[inds]|| = err ≈ 0`
+- if `size(V,1) >= size(V,2)`, `||Vᵀw_in - V[inds,:]ᵀw_in[inds]|| = err ≈ 0`
 - if `size(V,1) < size(V,2)`, `||V w_in - V[inds,:] w_in[inds]|| = err ≈ 0`
 Note that if `return_error=false` and `caratheodory_correction=false`, the
-error is not computed and a default return value of 0.0 is used.
+error is not computed and a default return value of 0.0 is used. Also note
+either `V` its transpose can be passed in. However, if `V` is square, will
+assume that the moments are given by `Vᵀw_in`.
 
 Uses the `kernel_downdater` object to generate kernel vectors for pruning,
 and the `prune_weights!` method to prune weights after kernel vectors have
@@ -39,11 +41,11 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
                               errnorm::Function=norm, extra_pruning=false, sval_tol=1e-15) 
     
     M, N = size(V)
-    if M < N
+    if M != N && N == length(w_in)
         V = transpose(V)
         M, N = N, M
     end
-    if length(w_in) != M # Dimension mismatch
+    if M != length(w_in)
         error("Dimension mismatch between V ($M×$N) and w ($(length(w_in)))")
     end
     if isa(V, OnDemandMatrix) && V.cols
@@ -167,8 +169,23 @@ function caratheodory_pruning(V, w_in; kernel=GivensUpDowndater,
                               kernel_kwargs...) 
 
     M, N = size(V)
-    if M < N
+    if M != N && N == length(w_in)
         V = transpose(V)
+        M, N = N, M
+    end
+    if M != length(w_in)
+        error("Dimension mismatch between V ($M×$N) and w ($(length(w_in)))")
+    end
+    if M <= N
+        if extra_pruning
+            w = copy(w_in)
+            inds = collect(eachindex(w))
+            err = extra_pruning!(V, w, inds)
+            return w, inds, err
+        else
+            # No pruning to do
+            return w_in, collect(eachindex(w_in)), 0.0
+        end
     end
     kernel_downdater = kernel(V; kernel_kwargs...)
     prune_weights! = pruning
