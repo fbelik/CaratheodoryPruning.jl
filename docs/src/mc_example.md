@@ -4,9 +4,9 @@ Consider the problem of integrating a circle with radius 1 centered at the origi
 ```math
 \int_C f(x) dx \approx \sum_{i=1}^M \frac{\pi}{M} f(x_i).
 ```
-Suppose we wish to accurately integrate the set of bivariate polynomials of degree at most 4, given by the span of ``S = \{1, x, x^2, xy, y^2, \ldots, xy^4, y^5\}`` for which ``N = |S| = \binom{6}{2} = 15``. This means we can form a 15 point quadrature rule which maintains accuracy of the Monte-Carlo rule on ``S``. We can do this through pruning.
+Suppose we wish to accurately integrate the set of bivariate polynomials of degree at most 4, given by the span of ``S = \{1, x, x^2, xy, y^2, \ldots, xy^3, y^4\}`` for which ``N = |S| = \binom{6}{2} = 15``. This means we can form a 15 point quadrature rule which maintains accuracy of the Monte-Carlo rule on ``S``. We can do this through pruning.
 
-Suppose additionally that ``M`` is sufficiently large such that we do not wish to store the full set of ``M`` points in memory. This can be done with an `OnDemandMatrix` and an `OnDemandVector`. See the following code for details.
+Suppose additionally that ``M`` is sufficiently large such that we do not wish to store the full set of ``M`` points in memory. This can be done with an `OnDemandMatrix` of `VandermondeVector`s and an `OnDemandVector`. See the following code for details.
 
 ```julia
 M = 10000
@@ -37,9 +37,7 @@ V = OnDemandMatrix(M, N, vecfun, by=:rows,
                    TV=VandermondeVector{Float64, Vector{Float64}, Vector{Float64}})
 
 # Store the initial weights OnDemand
-wfun(i) = begin
-    return π / M
-end
+wfun(i) = π / M
 w_in = OnDemandVector(M, wfun)
 
 # Prune and compute reduced weights
