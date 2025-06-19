@@ -9,6 +9,7 @@ Suppose we wish to accurately integrate the set of bivariate polynomials of degr
 Suppose additionally that ``M`` is sufficiently large such that we do not wish to store the full set of ``M`` points in memory. This can be done with an `OnDemandMatrix` of `VandermondeVector`s and an `OnDemandVector`. See the following code for details.
 
 ```julia
+using CaratheodoryPruning
 M = 10000
 p = 4 # Polynomial degree
 d = 2 # in R²
@@ -19,7 +20,7 @@ N = binomial(p+d,d)
 vecfun(i) = begin
     # Form random point in C
     pt = 2 .* rand(d) .- 1
-    while sum(pt .^ 2) <= 1
+    while sum(pt .^ 2) > 1
         pt .= 2 .* rand(d) .- 1
     end
     # Evaluate point on basis
