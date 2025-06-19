@@ -60,6 +60,7 @@ using LinearAlgebra: norm, I
         @test inds1 == inds2
         @test norm(w1[inds1] .- w2[inds2]) <= 1e-6
         @test norm(V[:,inds2]*w2[inds2] .- V0[:,inds1]*w1[inds1]) <= 1e-6
+        @test length(keys(w_in.elems)) == 0
         @test length(keys(w2.elems)) == N
         @test length(keys(V.vecs)) == N
         # Test if use row-storage instead
