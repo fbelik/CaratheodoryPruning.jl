@@ -67,6 +67,13 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
     end
     while ct <= m
         inds = get_inds(kernel_downdater)
+        if isa(w, OnDemandVector)
+            for ind in inds
+                if !(ind in keys(w.elems))
+                    w[ind] = w_in[ind]
+                end
+            end
+        end
         kvecs = get_kernel_vectors(kernel_downdater)
         prune_weights!(w, kvecs, inds)
         # Find all zero weights
@@ -84,6 +91,7 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
                 w[ind] = 0.0
                 if isa(w, OnDemandVector)
                     forget!(w, ind)
+                    forget!(w_in, ind)
                 end
                 ct += 1
                 if progress && (ct % every == 1)
@@ -99,12 +107,22 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
         update(pbar, m - pbar.current)
     end
     inds = get_inds(kernel_downdater)
+    if isa(w, OnDemandVector)
+        for ind in inds
+            if !(ind in keys(w.elems))
+                w[ind] = w_in[ind]
+            end
+        end
+    end
     # Compute error
     if caratheodory_correction || return_error
         η_comp = zeros(N)
         for ind in inds
             η_comp .+= (w[ind] .* view(V, ind, :))
             η_truth .+= (w_in[ind] .* view(V, ind, :))
+            if isa(w, OnDemandVector)
+                forget!(w_in, ind)
+            end
         end
         err = errnorm(η_comp .- η_truth)
     end
@@ -138,6 +156,13 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
         new_err = errnorm(η_comp .- η_truth)
         if new_err < err
             w[inds] .= w_cor
+            if isa(w, OnDemandVector)
+                for (i,ind) in enumerate(inds)
+                    if !(posinds[i])
+                        forget!(w, ind)
+                    end
+                end
+            end
             deleteat!(inds, (.! posinds))
             err = new_err
         end
