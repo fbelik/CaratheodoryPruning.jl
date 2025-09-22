@@ -14,14 +14,14 @@ function givens_qr_row_downdate!(Q::AbstractMatrix, rowidx, R::Union{Nothing,Abs
     q = view(Q, rowidx, 1:n)
     r = q[n]
     for i in n:-1:(rowidx+1)
-        G, r = givens(q[i-1], r, i-1, i)
+        G, _ = givens(q[i-1]', q[i]', i-1, i)
         rmul!(Q, G')
         if !isnothing(R)
             lmul!(G, R)
         end
     end
     for i in (rowidx-1):-1:1
-        G, r = givens(r, q[i], rowidx, i)
+        G, _ = givens(q[rowidx]', q[i]', rowidx, i)
         rmul!(Q, G')
         if !isnothing(R)
             lmul!(G, R)
@@ -45,12 +45,12 @@ function givens_qr_row_update!(Q::AbstractMatrix, R::AbstractMatrix, rowidx, new
     Q[rowidx, rowidx] = 1.0
     R[rowidx, :] .= newrow
     for i in 1:min(rowidx-1, n)
-        G, r = givens(R[i,i], R[rowidx,i], i, rowidx)
+        G, _ = givens(R[i,i], R[rowidx,i], i, rowidx)
         rmul!(Q, G')
         lmul!(G, R)
     end
     for i in rowidx:n
-        G, r = givens(R[i,i], R[i+1,i], i, i+1)
+        G, _ = givens(R[i,i], R[i+1,i], i, i+1)
         rmul!(Q, G')
         lmul!(G, R)
     end

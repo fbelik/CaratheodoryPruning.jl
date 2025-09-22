@@ -86,4 +86,26 @@ using LinearAlgebra: norm, I
         @test (10 in inds)
         @test (9 in inds)
     end
+
+    @testset "Signed and Complex" begin
+        M = 50; N = 10
+        tol = 1e-12
+        seed!(1)
+        # Both signs
+        V = rand(M, N)
+        w_in = rand(M) .- 0.5
+        w, inds = caratheodory_pruning(V, w_in)
+        @test norm(V'w .- V[inds,:]'w[inds]) <= tol
+        @test all((w_in .<= 0 .&& w .<= 0) .|| (w_in .>= 0 .&& w .>= 0))
+        # Negative
+        w_in = -1 .* rand(M)
+        w, inds = caratheodory_pruning(V, w_in)
+        @test norm(V'w .- V[inds,:]'w[inds]) <= tol
+        @test all(w .<= 0)
+        # Complex
+        V = rand(ComplexF64, M, N)
+        w_in = rand(ComplexF64, M)
+        w, inds = caratheodory_pruning(V, w_in)
+        @test norm(V'w .- V[inds,:]'w[inds]) <= tol
+    end
 end

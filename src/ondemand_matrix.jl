@@ -102,6 +102,13 @@ function Base.transpose(M::OnDemandMatrix{T,TV}) where T where TV
     return OnDemandMatrix{T,TV}(size(M,2), size(M,1), M.vecs, M.vecfun, !M.cols)
 end
 
+function Base.adjoint(M::OnDemandMatrix{T,TV}) where T where TV
+    if T <: Real
+        return transpose(M)
+    end
+    return OnDemandMatrix{T,TV}(size(M,2), size(M,1), M.vecs, i -> adjoint.(M.vecfun(i)), !M.cols)
+end
+
 function Base.view(M::OnDemandMatrix, i::Int, js::Union{<:AbstractVector{Int},Colon})
     if (!M.cols)
         if !(i in keys(M.vecs))

@@ -39,8 +39,8 @@ The goal of having nonnegative weights can be useful in problems such as numeric
 
 `CaratheodoryPruning.jl` implements various algorithms for this row index subselection problem.
 
-The base Carathéodory pruning method takes in a matrix `V` of size `M` by `N`, or the transpose of the ``\mathbf{P}`` matrix above. It also takes in a vector of nonnegative weights `w_in` of length `M`.
-It then returns a nonnegative pruned vector, `w`, of length `M`, and a vector of row indices of length `N`, `inds`, such that `V[inds,:]' * w[inds]` is approximately equal to `V' * w_in`.
+The base Carathéodory pruning method takes in a matrix `V` of size `M` by `N`, or the transpose of the ``\mathbf{P}`` matrix above. It also takes in a vector of (nonnegative) weights `w_in` of length `M`.
+It then returns a (nonnegative) pruned vector, `w`, of length `M`, and a vector of row indices of length `N`, `inds`, such that `V[inds,:]' * w[inds]` is approximately equal to `V' * w_in`.
 If `return_errors` is set to true, it additionally returns a vector of moment errors at each iteration.
 
 ```@docs
@@ -65,5 +65,19 @@ w, inds = caratheodory_pruning(V, w_in)
 w[inds]
 ```
 ```@example 1
+error = maximum(abs.(V[inds,:]' * w[inds] .- eta))
+```
+
+The base `caratheodory_pruning` method has been extended to allow for weights of arbitrary sign, in which case the resulting weight vector will be nonnegative where the original weights were nonnegative and nonpositive where the origianal weights were nonpositive. The method also works for complex `V` and `w_in` in which case the resulting `w` is complex.
+
+If one wishes to prune a rule with `V` complex and `w_in` real, they must separate the real and complex parts as follows:
+```julia
+V = rand(ComplexF64, M, N)
+w_in = rand(M)
+eta = V' * w_in
+
+V_cat = hcat(real.(V), imag.(V))
+# Prune, resulting rule has 2N indices
+w, inds = caratheodory_pruning(V_cat, w_in)
 error = maximum(abs.(V[inds,:]' * w[inds] .- eta))
 ```

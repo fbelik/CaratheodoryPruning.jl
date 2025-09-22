@@ -3,10 +3,10 @@
 A `KernelDowndater` is an abstract type used for computing kernel vectors of a subselection of the rows of the transpose of the matrix ``V``. 
 
 Denote ``V_{S*}`` to be the matrix formed by subselecting the indices specified by ``S = \{s_1,\ldots,s_m\}``, and similarly, ``x_{S}`` to be the subselection of elements of ``x``.
-This is typically done by forming QR-factorizations of ``V_{S*}``, and pulling a trailing column, ``q``, from the Q-factor, such that ``{V_{S*}}^T q = 0``.
+This is typically done by forming QR-factorizations of ``V_{S*}``, and pulling a trailing column, ``q``, from the Q-factor, such that ``{V_{S*}}^* q = 0``.
 The reason we are interested in forming kernel vectors is that then, we can update a set of weights without changing the moments.
 ```math
-{V_{S*}}^T q = 0,\quad {V_{S*}}^T w_{S} = \eta \implies {V_{S*}}^T (w_{S} + \alpha q) = \eta,
+{V_{S*}}^* q = 0,\quad {V_{S*}}^* w_{S} = \eta \implies {V_{S*}}^* (w_{S} + \alpha q) = \eta,
 ```
 where ``\alpha`` is a constant chosen to zero out one of the weights while keeping all others nonnegative. We then update the ``S``-indices of ``w`` as ``w_{S} = w_{S} + \alpha q``.
 

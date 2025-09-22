@@ -37,9 +37,8 @@ function extra_pruning!(V, w, inds, zero_tol=1e-16, sval_tol=1e-15)
         if (S[end] / S[1]) > sval_tol
             break
         end
-        alphan, k0n, alphap, k0p = get_alpha_k0s(w, kvec, inds)
-
-        alpha, k0 = abs(alphan) < abs(alphap) ? (alphan, k0n) : (alphap, k0p)
+        
+        alpha, k0 = get_min_alpha_k0(w, kvec, inds)
 
         if (S[end] * alpha) > zero_tol
             break
