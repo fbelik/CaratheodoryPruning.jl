@@ -96,7 +96,7 @@ using LinearAlgebra: norm, I
         w_in = rand(M) .- 0.5
         w, inds = caratheodory_pruning(V, w_in)
         @test norm(V'w .- V[inds,:]'w[inds]) <= tol
-        @test all((w_in .<= 0 .&& w .<= 0) .|| (w_in .>= 0 .&& w .>= 0))
+        @test all(i -> (w_in[i] <= 0 && w[i] <= 0) || (w_in[i] >= 0 && w[i] >= 0), eachindex(w_in))
         # Negative
         w_in = -1 .* rand(M)
         w, inds = caratheodory_pruning(V, w_in)
