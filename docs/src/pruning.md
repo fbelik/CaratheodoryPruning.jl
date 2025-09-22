@@ -4,10 +4,9 @@ Pruning is simply done by a method which takes in three arguments.
 They are the full vector of weights to update, `w`, a collection of indexable kernel vectors, `kvecs`, and the set of indicies from the `KernelDowndater`, `inds`.
 The kernel vectors will each have the same length as `inds`, while `w` will have to be indexed by `inds`.
 The pruning method will then choose a single or a linear combination of the kernel vectors to prune with, and update the weights vector, `w`.
-For each kernel vector, there will typically be two choices of scalars to add to the weights to maintain nonnegativity.
-These can be computed by the `get_alpha_k0s` method.
+The following method obtains the minimum perturbation along with the index zeroed out for a given weight vector and kernel vector.
 ```@docs
-CaratheodoryPruning.get_alpha_k0s
+CaratheodoryPruning.get_min_alpha_k0
 ```
 
 `CaratheodoryPruning.jl` comes with several built-in pruning options. They can be easily used by calling `caratheodory_pruning(V, w_in, pruning=PRUNING)`, replacing `PRUNING` with the appropriate method. 
