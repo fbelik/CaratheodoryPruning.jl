@@ -127,9 +127,9 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
         for ind in inds
             η_comp .+= (w[ind] .* view(V, ind, :))
             η_truth .+= (w_in[ind] .* view(V, ind, :))
-            if eltype(w_in) <: Real && w_in[ind] < 0
+            if all_pos && w_in[ind] < 0
                 all_pos = false
-            elseif eltype(w_in) <: Real && w_in[ind] > 0
+            elseif all_neg && w_in[ind] > 0
                 all_neg = false
             end
             if isa(w, OnDemandVector)
