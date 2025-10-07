@@ -69,6 +69,9 @@ mutable struct FullQRDowndater{T <: AbstractMatrix} <: KernelDowndater
     N::Int
     k::Int
     function FullQRDowndater(V::AbstractMatrix; k=1)
+        if eltype(V) <: Complex
+            V = adjoint(transpose(V))
+        end
         M, N = size(V)
         m = M - N
         if k > m
@@ -119,6 +122,9 @@ mutable struct GivensDowndater{T <: AbstractMatrix} <: KernelDowndater
     N::Int
     k::Int
     function GivensDowndater(V::AbstractMatrix; k=1)
+        if eltype(V) <: Complex
+            V = adjoint(transpose(V))
+        end
         M, N = size(V)
         m = M - N
         if k > m
@@ -191,6 +197,9 @@ mutable struct CholeskyDowndater{TV <: AbstractMatrix, TM <: AbstractMatrix, TVx
     full_forced_inds::TVi
     SM_tol::Float64
     function CholeskyDowndater(V::AbstractMatrix; k=1, pct_full_qr=10.0, SM_tol=1e-6, full_Q=false)
+        if eltype(V) <: Complex
+            V = adjoint(transpose(V))
+        end
         M, N = size(V)
         m = M - N
         if k > m
@@ -331,6 +340,9 @@ mutable struct FullQRUpDowndater{T <: AbstractMatrix, Ti <: AbstractVector{Int}}
     N::Int
     k::Int
     function FullQRUpDowndater(V::AbstractMatrix; ind_order=1:(size(V,1)), k=1)
+        if eltype(V) <: Complex
+            V = adjoint(transpose(V))
+        end
         M, N = size(V)
         m = M - N
         if k > m
@@ -410,6 +422,9 @@ mutable struct GivensUpDowndater{TV <: AbstractMatrix, TQR <: AbstractMatrix, Ti
     k::Int
     full_forced_inds::Tffi
     function GivensUpDowndater(V::AbstractMatrix; ind_order=1:(size(V,1)), k=1, pct_full_qr=2.0)
+        if eltype(V) <: Complex
+            V = adjoint(transpose(V))
+        end
         M, N = size(V)
         m = M - N
         if k > m

@@ -4,12 +4,12 @@
 Base method for Caratheodory pruning of the matrix `V` and weights `w_in`.
 Returns a new set of weights, `w`, a set of indices, `inds`, and an error
 `err` such that `w` only has nonzero elements at the indices, `inds`, and
-- if `size(V,1) >= size(V,2)`, `||V'w_in - V[inds,:]'w_in[inds]|| = err ≈ 0`
-- if `size(V,1) < size(V,2)`, `||V w_in - V[inds,:] w_in[inds]|| = err ≈ 0`
+- if `size(V,1) >= size(V,2)`, `||Vᵀw_in - V[inds,:]ᵀw_in[inds]|| = err ≈ 0`
+- if `size(V,1) < size(V,2)`, `||Vᵀw_in - V[inds,:]ᵀw_in[inds]|| = err ≈ 0`
 Note that if `return_error=false` and `caratheodory_correction=false`, the
 error is not computed and a default return value of 0.0 is used. Also note
-either `V` its transpose (adjoint) can be passed in. However, if `V` is square, 
-will assume that the moments are given by `V'w_in`.
+either `V` its transpose can be passed in. However, if `V` is square, 
+will assume that the moments are given by `Vᵀw_in`.
 
 Uses the `kernel_downdater` object to generate kernel vectors for pruning,
 and the `prune_weights!` method to prune weights after kernel vectors have
@@ -42,7 +42,7 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
     
     M, N = size(V)
     if M != N && N == length(w_in)
-        V = V'
+        V = transpose(V)
         M, N = N, M
     end
     if M != length(w_in)
@@ -144,7 +144,7 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
     end
     # Try to correct weights
     if caratheodory_correction
-        viewVt = (view(V, inds, 1:N))'
+        viewVt = transpose(view(V, inds, 1:N))
         w_cor = similar(view(w, inds))
         try
             w_cor .= viewVt \ η_truth
@@ -203,7 +203,7 @@ function caratheodory_pruning(V, w_in; kernel=GivensUpDowndater,
 
     M, N = size(V)
     if M != N && N == length(w_in)
-        V = V'
+        V = transpose(V)
         M, N = N, M
     end
     if M != length(w_in)

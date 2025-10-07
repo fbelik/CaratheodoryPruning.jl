@@ -34,8 +34,7 @@ vecfun(i) = begin
     return VandermondeVector(vec, pt)
 end
 # Store rows and pts OnDemand
-V = OnDemandMatrix(M, N, vecfun, by=:rows, 
-                   TV=VandermondeVector{Float64, Vector{Float64}, Vector{Float64}})
+V = OnDemandMatrix(M, N, vecfun, by=:rows)
 
 # Store the initial weights OnDemand
 wfun(i) = π / M
@@ -54,4 +53,9 @@ quadrule(f) = begin
     end
     return res
 end
+
+# Test quadrature rule on f(x)=1
+f(x) = 1.0
+π_approx = quadrule(f)
+relerr = abs(π - π_approx) / π
 ```

@@ -95,17 +95,18 @@ using LinearAlgebra: norm, I
         V = rand(M, N)
         w_in = rand(M) .- 0.5
         w, inds = caratheodory_pruning(V, w_in)
-        @test norm(V'w .- V[inds,:]'w[inds]) <= tol
+        @test norm(V'w_in .- V[inds,:]'w[inds]) <= tol
         @test all(i -> (w_in[i] <= 0 && w[i] <= 0) || (w_in[i] >= 0 && w[i] >= 0), eachindex(w_in))
         # Negative
         w_in = -1 .* rand(M)
         w, inds = caratheodory_pruning(V, w_in)
-        @test norm(V'w .- V[inds,:]'w[inds]) <= tol
+        @test norm(V'w_in .- V[inds,:]'w[inds]) <= tol
         @test all(w .<= 0)
         # Complex
         V = rand(ComplexF64, M, N)
         w_in = rand(ComplexF64, M)
         w, inds = caratheodory_pruning(V, w_in)
-        @test norm(V'w .- V[inds,:]'w[inds]) <= tol
+        # Must use transpose instead of adjoint for moment matching
+        @test norm(transpose(V)*w_in .- transpose(V[inds,:])*w[inds]) <= tol
     end
 end
