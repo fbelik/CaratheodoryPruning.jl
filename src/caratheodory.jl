@@ -82,7 +82,7 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
             if (ct > m)
                 break
             end
-            if w[ind] < zero_tol
+            if abs(w[ind]) < zero_tol
                 numzeros += 1
                 if caratheodory_correction || return_error
                     η_truth .+= (w_in[ind] .* view(V, ind, :))
