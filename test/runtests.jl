@@ -56,6 +56,14 @@ using LinearAlgebra: norm, I
         M = OnDemandMatrix(5, 5, i -> rand(ComplexF64, 5), by=selection, T=ComplexF64)
         @test norm(M .- transpose(transpose(M))) == 0
         @test norm(M .- adjoint.(adjoint(transpose(M)))) == 0
+        @test norm(M[:,3] .- reshape(view(M, :, 3), :)) == 0
+        @test norm(M[3,:] .- reshape(view(M, 3, :), :)) == 0
+        Mt = transpose(M)
+        @test norm(Mt[:,3] .- reshape(view(Mt, :, 3), :)) == 0
+        @test norm(Mt[3,:] .- reshape(view(Mt, 3, :), :)) == 0
+        Ma = M'
+        @test norm(Ma[:,3] .- reshape(view(Ma, :, 3), :)) == 0
+        @test norm(Ma[3,:] .- reshape(view(Ma, 3, :), :)) == 0
     end
     @testset "OnDemandVector" begin
         M = OnDemandVector(5, i -> 1.0*i, T=Float64)

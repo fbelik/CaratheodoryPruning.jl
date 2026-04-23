@@ -131,11 +131,7 @@ function Base.view(M::OnDemandMatrix, i::Int, js::Union{<:AbstractVector{Int},Co
         return vec
     else
         lj = isa(js, Colon) ? M.m : length(js)
-        res = reshape(view(M, i:i, js), (lj,))
-        if M.adjointed
-            return adjoint(res)
-        end
-        return res
+        return reshape(view(M, i:i, js), (lj,))
     end
 end
 
@@ -152,10 +148,6 @@ function Base.view(M::OnDemandMatrix, is::Union{<:AbstractVector{Int},Colon}, j:
         return vec
     else
         li = isa(is, Colon) ? M.n : length(is)
-        res = reshape(view(M, is, j:j),(li,))
-        if M.adjointed
-            return adjoint(res)
-        end
-        return res
+        return reshape(view(M, is, j:j),(li,))
     end
 end
