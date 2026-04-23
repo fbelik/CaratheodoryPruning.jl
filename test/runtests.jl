@@ -85,6 +85,42 @@ using LinearAlgebra: norm, I
         w, inds = caratheodory_pruning(V, w_in, extra_pruning=false)
         @test (10 in inds)
         @test (9 in inds)
+        # Randomized low-rank positive sign
+        for _ in 1:10
+            V = zeros(5,5)
+            w_in = rand(5)
+            for _ in 1:4
+                v = randn(5)
+                V .+= v * v'
+            end
+            w, inds = caratheodory_pruning(V, w_in, extra_pruning=true, zero_tol=1e-14)
+            @test transpose(V) * w_in ≈ transpose(V) * w
+            @test length(inds) < 5
+        end
+        # Randomized low-rank arbitrary sign
+        for _ in 1:10
+            V = zeros(5,5)
+            w_in = randn(5)
+            for _ in 1:4
+                v = randn(5)
+                V .+= v * v'
+            end
+            w, inds = caratheodory_pruning(V, w_in, extra_pruning=true, zero_tol=1e-14)
+            @test transpose(V) * w_in ≈ transpose(V) * w
+            @test length(inds) < 5
+        end
+        # Randomized low-rank complex
+        for _ in 1:10
+            V = zeros(ComplexF64,5,5)
+            w_in = randn(ComplexF64,5)
+            for _ in 1:4
+                v = randn(ComplexF64,5)
+                V .+= v * v'
+            end
+            w, inds = caratheodory_pruning(V, w_in, extra_pruning=true, zero_tol=1e-14)
+            @test transpose(V) * w_in ≈ transpose(V) * w
+            @test length(inds) < 5
+        end
     end
 
     @testset "Signed and Complex" begin

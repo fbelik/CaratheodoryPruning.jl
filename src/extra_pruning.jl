@@ -31,7 +31,7 @@ function extra_pruning!(V, w, inds, zero_tol=1e-16, sval_tol=1e-15)
     end
     deleteat!(inds, inds_delete)
     while true
-        _, S , Vmat = svd(V[inds, :]')
+        _, S , Vmat = svd(transpose(V[inds, :]))
         kvec = Vmat[:,end]
 
         if (S[end] / S[1]) > sval_tol
@@ -40,7 +40,7 @@ function extra_pruning!(V, w, inds, zero_tol=1e-16, sval_tol=1e-15)
         
         alpha, k0 = get_min_alpha_k0(w, kvec, inds)
 
-        if (S[end] * alpha) > zero_tol
+        if abs(alpha) * S[end] > zero_tol
             break
         end
 
@@ -58,7 +58,7 @@ function extra_pruning!(V, w, inds, zero_tol=1e-16, sval_tol=1e-15)
                 inds_delete[i] = true
             end
         end
-        err += abs(alpha * S[end])
+        err += abs(alpha) * S[end]
         deleteat!(inds, inds_delete)
     end
     return err
