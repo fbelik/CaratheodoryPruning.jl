@@ -68,7 +68,7 @@ w[inds]
 error = maximum(abs.(transpose(V[inds,:]) * w[inds] .- eta))
 ```
 
-The base `caratheodory_pruning` method has been extended to allow for weights of arbitrary sign, in which case the resulting weight vector will be nonnegative where the original weights were nonnegative and nonpositive where the origianal weights were nonpositive. The method also works for complex `V` and `w_in` in which case the resulting `w` is complex. Be careful with `V` complex as the `caratheodory_pruning` method respects the moments `eta = transpose(V) * w_in`, NOT `eta = adjoint(V) * w_in = V'w_in`.
+The base `caratheodory_pruning` method has been extended to allow for weights of arbitrary sign. If the default pruning methods are used, weights will not change sign during the pruning procedure. However, if `caratheodory_correction` is set to `true`, this is not guaranteed. The method also works for complex `V` and `w_in` in which case the resulting `w` is complex. Be careful with `V` complex as the `caratheodory_pruning` method respects the moments `eta = transpose(V) * w_in`, NOT `eta = adjoint(V) * w_in = V'w_in`.
 
 If one wishes to prune a rule with `V` complex and `w_in` real, they must separate the real and complex parts as follows:
 ```julia
