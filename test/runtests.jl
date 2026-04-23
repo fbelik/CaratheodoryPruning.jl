@@ -91,6 +91,20 @@ using LinearAlgebra: norm, I
         @test norm(V[:,inds3]*w3[inds3] .- V0[:,inds1]*w1[inds1]) <= 1e-6
         @test length(keys(V.vecs)) == N
         @test all([length(V.vecs[i]) == M for i in 1:N])
+        # Test complex valued
+        @testset "Complex OnDemand Kernel Choice $kernel" for kernel in (FullQRDowndater, GivensDowndater, CholeskyDowndater, FullQRUpDowndater, GivensUpDowndater)
+            M = 100; N = 10
+            V0 = randn(ComplexF64,N,M)
+            w0 = randn(ComplexF64,M)
+            V = OnDemandMatrix(N,M,i->V0[:,i],by=:cols,T=ComplexF64)
+            w_in = OnDemandVector(M,i->w0[i],T=ComplexF64)
+            seed!(1) # In case of randomness
+            w1,inds1 = caratheodory_pruning(V0, w0, kernel=CholeskyDowndater)
+            seed!(1) # In case of randomness
+            w2,inds2 = caratheodory_pruning(V, w_in, kernel=CholeskyDowndater)
+            @test inds1 == inds2
+            @test w1[inds1] ≈ w2[inds2]
+        end
     end
 
     @testset "Extra Pruning" begin
