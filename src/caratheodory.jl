@@ -26,7 +26,7 @@ If `return_error=true` or `caratheodory_correction=true`, computes the
 corresponding errors in moments, `err`. If both `return_error` and
 `caratheodory_correction` are set to `false`, `err` is set to 0.0.
 
-`errornorm` is the method called on the truth moments vs computed moments
+`errnorm` is the method called on the truth moments vs computed moments
 to evaluate final error, only used if `caratheodory_correction=true` 
 or `return_error=true`. Defaults to LinearAlgebra.jl's norm method.
 
@@ -182,13 +182,13 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
 end
 
 """
-`caratheodory_pruning(V, w_in[; kernel=GivensUpDownDater, pruning=:first, caratheodory_correction=true, return_error=false, errnorm=norm, zero_tol=1e-16, progress=false, kernel_kwargs...])`
+`caratheodory_pruning(V, w_in[; kernel=GivensUpDowndater, pruning=:first, caratheodory_correction=true, return_error=false, errnorm=norm, zero_tol=1e-16, progress=false, kernel_kwargs...])`
 
 Helper method for calling the base `caratheodory_pruning` method.
 
 Takes in a method, `kernel`, to form a `KernelDowndater` object.
 Options include `FullQRDowndater`, `GivensDowndater`, `CholeskyDowndater`, 
-`FullQRUpDowndater`, and `GivensUpDownDater`.
+`FullQRUpDowndater`, and `GivensUpDowndater`.
 
 Additional kwargs are passed into the `KernelDowndater` constructor.
 
