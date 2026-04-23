@@ -126,7 +126,7 @@ function Base.view(M::OnDemandMatrix, i::Int, js::Union{<:AbstractVector{Int},Co
         end
         vec = view(M.vecs[i], js)
         if M.adjointed
-            return adjoint(vec)
+            return reshape(adjoint(vec), :)
         end
         return vec
     else
@@ -143,7 +143,7 @@ function Base.view(M::OnDemandMatrix, is::Union{<:AbstractVector{Int},Colon}, j:
         end
         vec = view(M.vecs[j], is)
         if M.adjointed
-            return adjoint(vec)
+            return reshape(adjoint(vec), :)
         end
         return vec
     else

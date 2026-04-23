@@ -43,7 +43,7 @@ R matrix. Afterwards, will have `(QR)[rowidx,:] == newrow`.
 function givens_qr_row_update!(Q::AbstractMatrix, R::AbstractMatrix, rowidx, newrow)
     n = size(R,2)
     Q[rowidx, rowidx] = 1.0
-    R[rowidx, :] .= reshape(newrow, :)
+    R[rowidx, :] .= newrow
     for i in 1:min(rowidx-1, n)
         G, _ = givens(R[i,i], R[rowidx,i], i, rowidx)
         rmul!(Q, G')
