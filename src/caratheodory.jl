@@ -4,8 +4,8 @@
 Base method for Caratheodory pruning of the matrix `V` and weights `w_in`.
 Returns a new set of weights, `w`, a set of indices, `inds`, and an error
 `err` such that `w` only has nonzero elements at the indices, `inds`, and
-- if `size(V,1) >= size(V,2)`, `||Vᵀw_in - V[inds,:]ᵀw_in[inds]|| = err ≈ 0`
-- if `size(V,1) < size(V,2)`, `||Vᵀw_in - V[inds,:]ᵀw_in[inds]|| = err ≈ 0`
+- if `size(V,1) >= size(V,2)`, `||Vᵀw_in - V[inds,:]ᵀw[inds]|| = err ≈ 0`
+- if `size(V,1) < size(V,2)`, `||V w_in - V[inds,:] w[inds]|| = err ≈ 0`
 Note that if `return_error=false` and `caratheodory_correction=false`, the
 error is not computed and a default return value of 0.0 is used. Also note
 either `V` its transpose can be passed in. However, if `V` is square, 
