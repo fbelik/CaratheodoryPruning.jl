@@ -57,11 +57,14 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
     m = M-N
     ct = 1
     err = 0.0
+    TV = eltype(V)
+    Tw = eltype(w_in)
+    Tη = promote_type(TV, Tw)
     if caratheodory_correction || return_error
-        η_truth = zeros(eltype(V), N)
+        η_truth = zeros(Tη, N)
     end
-    all_pos = eltype(w_in) <: Real
-    all_neg = eltype(w_in) <: Real
+    all_pos = caratheodory_correction && (Tw <: Real)
+    all_neg = caratheodory_correction && (Tw <: Real)
 
     if progress
         pbar = ProgressBar(total=m)
@@ -123,7 +126,7 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
     end
     # Compute error
     if caratheodory_correction || return_error
-        η_comp = zeros(eltype(V),N)
+        η_comp = zeros(Tη,N)
         for ind in inds
             η_comp .+= (w[ind] .* view(V, ind, :))
             η_truth .+= (w_in[ind] .* view(V, ind, :))
