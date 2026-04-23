@@ -30,6 +30,7 @@ struct OnDemandMatrix{T,TV<:AbstractVector{T}} <: AbstractMatrix{T}
     vecs::Dict{Int,TV}
     vecfun::Function
     cols::Bool
+    adjointed::Bool
 end
 
 """
@@ -40,7 +41,7 @@ formed when needed by `vecfun(i::Int)`. If `T` and `TV` are not passed in,
 then `vecfun(1)` is called to determine the types. If one of the two is provided,
 the other is inferred.
 """
-function OnDemandMatrix(n::Int, m::Int, vecfun::Function; by=:cols, T=nothing, TV=nothing)
+function OnDemandMatrix(n::Int, m::Int, vecfun::Function; by=:cols, adjointed=false, T=nothing, TV=nothing)
     @assert (by in (:rows, :cols)) "by argument must be either :cols or :rows"
     if isnothing(T) && isnothing(TV)
         ex = vecfun(1)
@@ -53,7 +54,7 @@ function OnDemandMatrix(n::Int, m::Int, vecfun::Function; by=:cols, T=nothing, T
         TV = typeof(ex)
     end
     vecs = Dict{Int,TV}()
-    return OnDemandMatrix{T,TV}(n, m, vecs, vecfun, by==:cols)
+    return OnDemandMatrix{T,TV}(n, m, vecs, vecfun, by==:cols, adjointed)
 end
 
 function Base.size(M::OnDemandMatrix)
@@ -66,7 +67,7 @@ end
 
 function Base.show(io::Core.IO, M::OnDemandMatrix)
     stored = length(M.vecs)
-    print(io, "$(size(M,1))x$(size(M,2)) $(typeof(M)) with $(stored) stored $((M.cols ? "columns" : "rows"))")
+    print(io, "$(size(M,1))x$(size(M,2)) $(M.adjointed ? "Adjoint " : "")$(typeof(M)) with $(stored) stored $((M.cols ? "columns" : "rows"))")
 end
 
 function Base.getindex(M::OnDemandMatrix, idx::Vararg{Int,2})
@@ -76,13 +77,21 @@ function Base.getindex(M::OnDemandMatrix, idx::Vararg{Int,2})
             vec = M.vecfun(j)
             push!(M.vecs, j => vec)
         end
-        return M.vecs[j][i]
+        res = M.vecs[j][i]
+        if M.adjointed
+            return adjoint(res)
+        end
+        return res
     else
         if !(i in keys(M.vecs))
             vec = M.vecfun(i)
             push!(M.vecs, i => vec)
         end
-        return M.vecs[i][j]
+        res = M.vecs[i][j]
+        if M.adjointed
+            return adjoint(res)
+        end
+        return res
     end
 end
 
@@ -99,14 +108,14 @@ function forget!(M::OnDemandMatrix, i::Int)
 end
 
 function Base.transpose(M::OnDemandMatrix{T,TV}) where T where TV
-    return OnDemandMatrix{T,TV}(size(M,2), size(M,1), M.vecs, M.vecfun, !M.cols)
+    return OnDemandMatrix{T,TV}(size(M,2), size(M,1), M.vecs, M.vecfun, !M.cols, M.adjointed)
 end
 
 function Base.adjoint(M::OnDemandMatrix{T,TV}) where T where TV
     if T <: Real
         return transpose(M)
     end
-    return OnDemandMatrix{T,TV}(size(M,2), size(M,1), M.vecs, i -> adjoint.(M.vecfun(i)), !M.cols)
+    return OnDemandMatrix{T,TV}(size(M,2), size(M,1), M.vecs, i -> adjoint.(M.vecfun(i)), !M.cols, !M.adjointed)
 end
 
 function Base.view(M::OnDemandMatrix, i::Int, js::Union{<:AbstractVector{Int},Colon})
@@ -114,12 +123,19 @@ function Base.view(M::OnDemandMatrix, i::Int, js::Union{<:AbstractVector{Int},Co
         if !(i in keys(M.vecs))
             vec = M.vecfun(i)
             push!(M.vecs, i => vec)
-            return view(vec, js)
         end
-        return view(M.vecs[i], js)
+        vec = view(M.vecs[i], js)
+        if M.adjointed
+            return adjoint(vec)
+        end
+        return vec
     else
         lj = isa(js, Colon) ? M.m : length(js)
-        return reshape(view(M, i:i, js), (lj,))
+        res = reshape(view(M, i:i, js), (lj,))
+        if M.adjointed
+            return adjoint(res)
+        end
+        return res
     end
 end
 
@@ -128,11 +144,18 @@ function Base.view(M::OnDemandMatrix, is::Union{<:AbstractVector{Int},Colon}, j:
         if !(j in keys(M.vecs))
             vec = M.vecfun(j)
             push!(M.vecs, j => vec)
-            return view(vec, is)
         end
-        return view(M.vecs[j], is)
+        vec = view(M.vecs[j], is)
+        if M.adjointed
+            return adjoint(vec)
+        end
+        return vec
     else
         li = isa(is, Colon) ? M.n : length(is)
-        return reshape(view(M, is, j:j),(li,))
+        res = reshape(view(M, is, j:j),(li,))
+        if M.adjointed
+            return adjoint(res)
+        end
+        return res
     end
 end

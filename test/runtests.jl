@@ -52,6 +52,10 @@ using LinearAlgebra: norm, I
         @test (M.vecs[2][2] == 1.0)
         @test (M.vecs[2][5] == 0.0)
         @test (length(keys(M.vecs)) == 1)
+        # Complex case
+        M = OnDemandMatrix(5, 5, i -> rand(ComplexF64, 5), by=selection, T=ComplexF64)
+        @test norm(M .- transpose(transpose(M))) == 0
+        @test norm(M .- adjoint.(adjoint(transpose(M)))) == 0
     end
     @testset "OnDemandVector" begin
         M = OnDemandVector(5, i -> 1.0*i, T=Float64)
