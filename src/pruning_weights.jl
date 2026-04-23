@@ -4,8 +4,8 @@
 Helper method that, given a vector of weights, `w`, a kernel
 vector `kvec`, and a vector of indices, `inds`, returns a 2-tuple,
 `(alpha,k0)` used for pruning. `alpha` is the smallest magnitude
-multiple allowed such that `w = w - alpha * kvec` still has
-nonnegative entries, and equals zero at index `k0`.
+multiple allowed such that `w = w - alpha * kvec` exactly
+zeros out at least index: `k0`.
 """
 function get_min_alpha_k0(w, kvec, inds)
     alpha = Inf
