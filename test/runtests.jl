@@ -7,8 +7,15 @@ using LinearAlgebra: norm, I
     seed!(1)
     V = rand(100,10)
     w = rand(size(V, 1))
+    Vtw = transpose(V) * w
+    w_arbsn = randn(size(V, 1))
+    Vtw_arbsn = transpose(V) * w_arbsn
+    V_cplx = randn(ComplexF64, 100, 10)
+    w_cplx = randn(ComplexF64, size(V_cplx, 1))
+    Vtw_cplx = transpose(V_cplx) * w_cplx
     @inferred caratheodory_pruning(V, w)
-    Vtw = V'w
+    @inferred caratheodory_pruning(V, w_arbsn)
+    @inferred caratheodory_pruning(V_cplx, w_cplx)
     tol = 1e-12
     @testset "Kernel choice $kernel" for kernel in (FullQRDowndater, GivensDowndater, CholeskyDowndater, FullQRUpDowndater, GivensUpDowndater)
         for pruning in (prune_weights_first!, prune_weights_minabs!)
@@ -16,7 +23,15 @@ using LinearAlgebra: norm, I
                 for k in (1,5)
                     neww, inds = caratheodory_pruning(V, w, kernel=kernel, pruning=pruning, 
                         caratheodory_correction=caratheodory_correction, k=k)
-                    @test norm(V'neww .- Vtw) <= tol
+                    @test norm(transpose(V) * neww .- Vtw) <= tol
+                    # Arbitrary sign
+                    neww, inds = caratheodory_pruning(V, w_arbsn, kernel=kernel, pruning=pruning, 
+                        caratheodory_correction=caratheodory_correction, k=k)
+                    @test norm(transpose(V) * neww .- Vtw_arbsn) <= tol
+                    # Complex
+                    neww, inds = caratheodory_pruning(V_cplx, w_cplx, kernel=kernel, pruning=pruning, 
+                        caratheodory_correction=caratheodory_correction, k=k)
+                    @test norm(transpose(V_cplx) * neww .- Vtw_cplx) <= tol
                 end
             end
         end
