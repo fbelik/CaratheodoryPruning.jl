@@ -99,9 +99,9 @@ using LinearAlgebra: norm, I
             V = OnDemandMatrix(N,M,i->V0[:,i],by=:cols,T=ComplexF64)
             w_in = OnDemandVector(M,i->w0[i],T=ComplexF64)
             seed!(1) # In case of randomness
-            w1,inds1 = caratheodory_pruning(V0, w0, kernel=CholeskyDowndater)
+            w1,inds1 = caratheodory_pruning(V0, w0, kernel=kernel)
             seed!(1) # In case of randomness
-            w2,inds2 = caratheodory_pruning(V, w_in, kernel=CholeskyDowndater)
+            w2,inds2 = caratheodory_pruning(V, w_in, kernel=kernel)
             @test inds1 == inds2
             @test w1[inds1] ≈ w2[inds2]
         end
