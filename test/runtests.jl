@@ -108,5 +108,10 @@ using LinearAlgebra: norm, I
         w, inds = caratheodory_pruning(V, w_in)
         # Must use transpose instead of adjoint for moment matching
         @test norm(transpose(V)*w_in .- transpose(V[inds,:])*w[inds]) <= tol
+        # Complex with transposed V
+        V = rand(ComplexF64, N, M)
+        w_in = rand(ComplexF64, M)
+        w, inds = caratheodory_pruning(V, w_in)
+        @test norm(V*w_in .- V[:,inds]*w[inds]) <= tol
     end
 end
