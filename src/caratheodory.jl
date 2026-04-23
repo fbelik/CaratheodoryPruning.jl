@@ -216,7 +216,7 @@ function caratheodory_pruning(V, w_in; kernel=GivensUpDowndater,
         if extra_pruning
             w = copy(w_in)
             inds = collect(eachindex(w))
-            err = extra_pruning!(V, w, inds)
+            err = extra_pruning!(V, w, inds, zero_tol, sval_tol)
             return w, inds, err
         else
             # No pruning to do
