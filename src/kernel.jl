@@ -69,6 +69,9 @@ mutable struct FullQRDowndater{T <: AbstractMatrix} <: KernelDowndater
     N::Int
     k::Int
     function FullQRDowndater(V::AbstractMatrix; k=1)
+        if eltype(V) <: Complex
+            V = adjoint(transpose(V))
+        end
         M, N = size(V)
         m = M - N
         if k > m
@@ -112,13 +115,16 @@ old, full, `Q`-factor, which takes `O(M²)` flops where `V` is an `M x N` matrix
 Form with `GivensDowndater(V[; k=1])` where `k` is the (maximum) number
 of kernel vectors returned each time `get_kernel_vectors` is called.
 """
-mutable struct GivensDowndater{T <: AbstractMatrix} <: KernelDowndater
+mutable struct GivensDowndater{T <: AbstractMatrix, TQ <: AbstractMatrix} <: KernelDowndater
     V::T
-    Q::Union{T, QRCompactWYQ}
+    Q::TQ
     inds::Vector{Int}
     N::Int
     k::Int
     function GivensDowndater(V::AbstractMatrix; k=1)
+        if eltype(V) <: Complex
+            V = adjoint(transpose(V))
+        end
         M, N = size(V)
         m = M - N
         if k > m
@@ -129,7 +135,7 @@ mutable struct GivensDowndater{T <: AbstractMatrix} <: KernelDowndater
         inds = collect(1:M)
         Q,_ = qr(V)
         Q = Q[1:M,1:M]
-        return new{typeof(V)}(V, Q, inds, N, k)
+        return new{typeof(V),typeof(Q)}(V, Q, inds, N, k)
     end
 end
 
@@ -191,6 +197,9 @@ mutable struct CholeskyDowndater{TV <: AbstractMatrix, TM <: AbstractMatrix, TVx
     full_forced_inds::TVi
     SM_tol::Float64
     function CholeskyDowndater(V::AbstractMatrix; k=1, pct_full_qr=10.0, SM_tol=1e-6, full_Q=false)
+        if eltype(V) <: Complex
+            V = adjoint(transpose(V))
+        end
         M, N = size(V)
         m = M - N
         if k > m
@@ -201,9 +210,9 @@ mutable struct CholeskyDowndater{TV <: AbstractMatrix, TM <: AbstractMatrix, TVx
         inds = collect(1:M)
         Q,_ = qr(V)
         Q = Q[1:M,1:(N+k)]
-        D = zeros(Float64, N+k+1, N+k)
-        x = zeros(Float64, N+k)
-        C = Matrix{Float64}(I, (N+k,N+k))
+        D = zeros(eltype(V), N+k+1, N+k)
+        x = zeros(eltype(V), N+k)
+        C = Matrix{eltype(V)}(I, (N+k,N+k))
         # Full QR forced indices (logarithmic)
         @assert (0.0 <= pct_full_qr <= 100.0)
         fullQR_forced = floor(Int, m * pct_full_qr / 100)
@@ -263,9 +272,9 @@ function downdate!(kd::CholeskyDowndater, idx::Int)
         perform_fullQR = true
         # Resize matrices
         kd.Q = view(kd.Q, :, 1:(N+k))
-        kd.D = zeros(Float64, N+k+1, N+k)
-        kd.x = zeros(Float64, N+k)
-        kd.C = Matrix{Float64}(I, (N+k,N+k))
+        kd.D = zeros(eltype(kd.Q), N+k+1, N+k)
+        kd.x = zeros(eltype(kd.Q), N+k)
+        kd.C = Matrix{eltype(kd.Q)}(I, (N+k,N+k))
     else
         # Form x-vector for Sherman Morrison 
         if kd.full_Q
@@ -274,7 +283,7 @@ function downdate!(kd::CholeskyDowndater, idx::Int)
             x .= transpose(kd.C) * view(kd.Q, idx, 1:(N+k))
         end
         SM_sqrt_denom = 1 - x'x
-        if (SM_sqrt_denom <= kd.SM_tol)
+        if abs(SM_sqrt_denom) <= kd.SM_tol
             # To prevent divby zero errors
             perform_fullQR = true
         end
@@ -296,10 +305,10 @@ function downdate!(kd::CholeskyDowndater, idx::Int)
         D[1:(N+k),1:(N+k)] .= Matrix(I, (N+k,N+k))
         D[N+k+1,1:(N+k)] .= x
         for i in (N+k):-1:1
-            G, r = givens(1.0, D[N+k+1,i], i, N+k+1)
+            G, _ = givens(one(eltype(kd.Q)), D[N+k+1,i], i, N+k+1)
             lmul!(G, D)
         end
-        LinvTnew = transpose(view(D, 1:(N+k), 1:(N+k)))
+        LinvTnew = view(D, 1:(N+k), 1:(N+k))'
         if kd.full_Q
             kd.Q[kd.inds,1:(N+k)] .= view(kd.Q, kd.inds, 1:(N+k)) * LinvTnew
         else
@@ -331,6 +340,9 @@ mutable struct FullQRUpDowndater{T <: AbstractMatrix, Ti <: AbstractVector{Int}}
     N::Int
     k::Int
     function FullQRUpDowndater(V::AbstractMatrix; ind_order=1:(size(V,1)), k=1)
+        if eltype(V) <: Complex
+            V = adjoint(transpose(V))
+        end
         M, N = size(V)
         m = M - N
         if k > m
@@ -410,6 +422,9 @@ mutable struct GivensUpDowndater{TV <: AbstractMatrix, TQR <: AbstractMatrix, Ti
     k::Int
     full_forced_inds::Tffi
     function GivensUpDowndater(V::AbstractMatrix; ind_order=1:(size(V,1)), k=1, pct_full_qr=2.0)
+        if eltype(V) <: Complex
+            V = adjoint(transpose(V))
+        end
         M, N = size(V)
         m = M - N
         if k > m

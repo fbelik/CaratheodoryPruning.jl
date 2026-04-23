@@ -4,12 +4,12 @@
 Base method for Caratheodory pruning of the matrix `V` and weights `w_in`.
 Returns a new set of weights, `w`, a set of indices, `inds`, and an error
 `err` such that `w` only has nonzero elements at the indices, `inds`, and
-- if `size(V,1) >= size(V,2)`, `||Vᵀw_in - V[inds,:]ᵀw_in[inds]|| = err ≈ 0`
-- if `size(V,1) < size(V,2)`, `||V w_in - V[inds,:] w_in[inds]|| = err ≈ 0`
+- if `size(V,1) >= size(V,2)`, `||Vᵀw_in - V[inds,:]ᵀw[inds]|| = err ≈ 0`
+- if `size(V,1) < size(V,2)`, `||V w_in - V[inds,:] w[inds]|| = err ≈ 0`
 Note that if `return_error=false` and `caratheodory_correction=false`, the
 error is not computed and a default return value of 0.0 is used. Also note
-either `V` its transpose can be passed in. However, if `V` is square, will
-assume that the moments are given by `Vᵀw_in`.
+either `V` its transpose can be passed in. However, if `V` is square, 
+will assume that the moments are given by `Vᵀw_in`.
 
 Uses the `kernel_downdater` object to generate kernel vectors for pruning,
 and the `prune_weights!` method to prune weights after kernel vectors have
@@ -26,7 +26,7 @@ If `return_error=true` or `caratheodory_correction=true`, computes the
 corresponding errors in moments, `err`. If both `return_error` and
 `caratheodory_correction` are set to `false`, `err` is set to 0.0.
 
-`errornorm` is the method called on the truth moments vs computed moments
+`errnorm` is the method called on the truth moments vs computed moments
 to evaluate final error, only used if `caratheodory_correction=true` 
 or `return_error=true`. Defaults to LinearAlgebra.jl's norm method.
 
@@ -57,9 +57,14 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
     m = M-N
     ct = 1
     err = 0.0
+    TV = eltype(V)
+    Tw = eltype(w_in)
+    Tη = promote_type(TV, Tw)
     if caratheodory_correction || return_error
-        η_truth = zeros(N)
+        η_truth = zeros(Tη, N)
     end
+    all_pos = caratheodory_correction && (Tw <: Real)
+    all_neg = caratheodory_correction && (Tw <: Real)
 
     if progress
         pbar = ProgressBar(total=m)
@@ -82,10 +87,15 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
             if (ct > m)
                 break
             end
-            if w[ind] < zero_tol
+            if abs(w[ind]) < zero_tol
                 numzeros += 1
                 if caratheodory_correction || return_error
                     η_truth .+= (w_in[ind] .* view(V, ind, :))
+                    if all_pos && w_in[ind] < 0
+                        all_pos = false
+                    elseif all_neg && w_in[ind] > 0
+                        all_neg = false
+                    end
                 end
                 downdate!(kernel_downdater, ind)
                 w[ind] = 0.0
@@ -116,15 +126,20 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
     end
     # Compute error
     if caratheodory_correction || return_error
-        η_comp = zeros(N)
+        η_comp = zeros(Tη,N)
         for ind in inds
             η_comp .+= (w[ind] .* view(V, ind, :))
             η_truth .+= (w_in[ind] .* view(V, ind, :))
+            if all_pos && w_in[ind] < 0
+                all_pos = false
+            elseif all_neg && w_in[ind] > 0
+                all_neg = false
+            end
             if isa(w, OnDemandVector)
                 forget!(w_in, ind)
             end
         end
-        err = errnorm(η_comp .- η_truth)
+        err += errnorm(η_comp .- η_truth)
     end
     # Prune extra
     if extra_pruning
@@ -143,12 +158,8 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
                 throw(e)
             end
         end
-        # Check if any negative entries
-        minentry = minimum(w_cor)
-        posinds = (w_cor .> 0)
-        if minentry <= 0
-            w_cor .*= posinds
-        end
+        okayinds = all_pos ? w_cor .> 0 : (all_neg ? w_cor .< 0 : (w_cor .!= 0))
+        w_cor .*= okayinds
         η_comp .= 0.0
         for (i,ind) in enumerate(inds)
             η_comp .+= (w_cor[i] .* view(V, ind, :))
@@ -158,26 +169,26 @@ function caratheodory_pruning(V, w_in, kernel_downdater::KernelDowndater,
             w[inds] .= w_cor
             if isa(w, OnDemandVector)
                 for (i,ind) in enumerate(inds)
-                    if !(posinds[i])
+                    if !(okayinds[i])
                         forget!(w, ind)
                     end
                 end
             end
-            deleteat!(inds, (.! posinds))
-            err = new_err
+            deleteat!(inds, (.! okayinds))
+            err = 0.0 + new_err
         end
     end
     return w, inds, err
 end
 
 """
-`caratheodory_pruning(V, w_in[; kernel=GivensUpDownDater, pruning=:first, caratheodory_correction=true, return_error=false, errnorm=norm, zero_tol=1e-16, progress=false, kernel_kwargs...])`
+`caratheodory_pruning(V, w_in[; kernel=GivensUpDowndater, pruning=:first, caratheodory_correction=true, return_error=false, errnorm=norm, zero_tol=1e-16, progress=false, kernel_kwargs...])`
 
 Helper method for calling the base `caratheodory_pruning` method.
 
 Takes in a method, `kernel`, to form a `KernelDowndater` object.
 Options include `FullQRDowndater`, `GivensDowndater`, `CholeskyDowndater`, 
-`FullQRUpDowndater`, and `GivensUpDownDater`.
+`FullQRUpDowndater`, and `GivensUpDowndater`.
 
 Additional kwargs are passed into the `KernelDowndater` constructor.
 
@@ -205,7 +216,7 @@ function caratheodory_pruning(V, w_in; kernel=GivensUpDowndater,
         if extra_pruning
             w = copy(w_in)
             inds = collect(eachindex(w))
-            err = extra_pruning!(V, w, inds)
+            err = extra_pruning!(V, w, inds, zero_tol, sval_tol)
             return w, inds, err
         else
             # No pruning to do
