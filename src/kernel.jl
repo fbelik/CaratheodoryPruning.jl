@@ -70,6 +70,8 @@ mutable struct FullQRDowndater{T <: AbstractMatrix} <: KernelDowndater
     k::Int
     function FullQRDowndater(V::AbstractMatrix; k=1)
         if eltype(V) <: Complex
+            # In case V is complex, need QR factorization of
+            # adjoint(transpose(V)) to preserve moments Vᵀw
             V = adjoint(transpose(V))
         end
         M, N = size(V)
@@ -123,6 +125,8 @@ mutable struct GivensDowndater{T <: AbstractMatrix, TQ <: AbstractMatrix} <: Ker
     k::Int
     function GivensDowndater(V::AbstractMatrix; k=1)
         if eltype(V) <: Complex
+            # In case V is complex, need QR factorization of
+            # adjoint(transpose(V)) to preserve moments Vᵀw
             V = adjoint(transpose(V))
         end
         M, N = size(V)
@@ -198,6 +202,8 @@ mutable struct CholeskyDowndater{TV <: AbstractMatrix, TM <: AbstractMatrix, TVx
     SM_tol::Float64
     function CholeskyDowndater(V::AbstractMatrix; k=1, pct_full_qr=10.0, SM_tol=1e-6, full_Q=false)
         if eltype(V) <: Complex
+            # In case V is complex, need QR factorization of
+            # adjoint(transpose(V)) to preserve moments Vᵀw
             V = adjoint(transpose(V))
         end
         M, N = size(V)
@@ -341,6 +347,8 @@ mutable struct FullQRUpDowndater{T <: AbstractMatrix, Ti <: AbstractVector{Int}}
     k::Int
     function FullQRUpDowndater(V::AbstractMatrix; ind_order=1:(size(V,1)), k=1)
         if eltype(V) <: Complex
+            # In case V is complex, need QR factorization of
+            # adjoint(transpose(V)) to preserve moments Vᵀw
             V = adjoint(transpose(V))
         end
         M, N = size(V)
@@ -423,6 +431,8 @@ mutable struct GivensUpDowndater{TV <: AbstractMatrix, TQR <: AbstractMatrix, Ti
     full_forced_inds::Tffi
     function GivensUpDowndater(V::AbstractMatrix; ind_order=1:(size(V,1)), k=1, pct_full_qr=2.0)
         if eltype(V) <: Complex
+            # In case V is complex, need QR factorization of
+            # adjoint(transpose(V)) to preserve moments Vᵀw
             V = adjoint(transpose(V))
         end
         M, N = size(V)
