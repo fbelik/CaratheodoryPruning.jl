@@ -64,7 +64,8 @@ function Base.getindex(M::OnDemandVector{T}, idx::Vararg{Int,1}) where T
     return M.elems[i]
 end
 
-function Base.setindex!(M::OnDemandVector{T}, v::T, idx::Vararg{Int,1}) where T
+function Base.setindex!(M::OnDemandVector{T}, v, idx::Vararg{Int,1}) where T
+    v = T(v)
     i, = idx
     if i in keys(M.elems)
         M.elems[i] = v

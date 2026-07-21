@@ -1,32 +1,26 @@
 """
-`get_alpha_k0s(w, kvec, inds)`
+`get_min_alpha_k0(w, kvec, inds)`
 
 Helper method that, given a vector of weights, `w`, a kernel
-vector `kvec`, and a vector of indices, `inds`, returns a 4-tuple,
-`(alphan, k0n, alphap, k0p)` used for pruning. `alphan` is the most
-negative multiple allowed such that `w = w + alphan * kvec` still has
-nonnegative entries, and equals zero at `k0n`. Similarly, `alphap` is
-the most positive multiple allowed such that `w = w + alphap * kvec` 
-still has nonnegative entries, and equals zero at `k0p`.
+vector `kvec`, and a vector of indices, `inds`, returns a 2-tuple,
+`(alpha,k0)` used for pruning. `alpha` is the smallest magnitude
+multiple allowed such that `w = w - alpha * kvec` exactly
+zeros out at least index: `k0`.
 """
-function get_alpha_k0s(w, kvec, inds)
-    alphap = Inf
-    k0p = -1
-    alphan = -Inf
-    k0n = -1
+function get_min_alpha_k0(w, kvec, inds)
+    alpha = Inf
+    k0 = -1
     for (i,k) in enumerate(kvec)
+        if k == 0
+            continue
+        end
         alphanew = w[inds[i]] / k
-        if alphanew != 0.0
-            if (k > 0) && (alphanew < alphap)
-                alphap = alphanew
-                k0p = i
-            elseif (k < 0) && (alphanew > alphan)
-                alphan = alphanew
-                k0n = i
-            end
+        if abs(alphanew) < abs(alpha)
+            alpha = alphanew
+            k0 = i
         end
     end
-    return (alphan, k0n, alphap, k0p)
+    return (alpha, k0)
 end
 
 """
@@ -47,9 +41,7 @@ function prune_weights_first!(w, kvecs, inds)
         kvec = view(kvec, inds)
     end
 
-    alphan, k0n, alphap, k0p = get_alpha_k0s(w, kvec, inds)
-
-    alpha, k0 = abs(alphan) < abs(alphap) ? (alphan, k0n) : (alphap, k0p)
+    alpha, k0 = get_min_alpha_k0(w, kvec, inds)
 
     for i in eachindex(kvec)
         w[inds[i]] -= alpha * kvec[i]
@@ -78,9 +70,8 @@ function prune_weights_minabs!(w, kvecs, inds)
             kvec = view(kvec, inds)
         end
         
-        alphan, k0n, alphap, k0p = get_alpha_k0s(w, kvec, inds)
+        alpha, k0 = get_min_alpha_k0(w, kvec, inds)
 
-        alpha, k0 = abs(alphan) < abs(alphap) ? (alphan, k0n) : (alphap, k0p)
         if abs(alpha) < abs(minabsalpha)
             chosenkvec = kvec
             minabsalpha = alpha
