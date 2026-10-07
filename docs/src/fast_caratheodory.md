@@ -35,6 +35,28 @@ w_pruned, inds = fast_caratheodory(V, w)
 norm(transpose(V) * w - transpose(V) * w_pruned)
 ```
 
+## Timing
+
+Verification of runtime improvement: 
+
+```@example
+using CaratheodoryPruning
+using Random
+
+Random.seed!(1)
+M, N = 1_000, 10
+V = rand(M, N)
+w = rand(M)
+# Run each once to avoid compilation time
+caratheodory_pruning(V, w)
+fast_caratheodory(V, w)
+
+t1 = @elapsed caratheodory_pruning(V, w)
+t2 = @elapsed fast_caratheodory(V, w)
+
+"Standard method: $(1000*t1)ms, fast method: $(1000*t2)ms"
+```
+
 ## Method and reference
 
 The method is inspired by the fast Carathéodory-set construction of Alaa
