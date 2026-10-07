@@ -8,6 +8,7 @@ makedocs(
         "Background" => "index.md",
         "Kernel Downdaters" => "kerneldowndater.md",
         "Pruning" => "pruning.md",
+        "Fast Carathéodory Pruning" => "fast_caratheodory.md",
         "On Demand Arrays" => "ondemand.md",
         "MC Example" => "mc_example.md"
     ],
