@@ -2,6 +2,12 @@
 
 In the case that the matrix ``V`` is too large to store in memory, when using a `KernelDowndater` such as `GivensUpDowndater` which only requires access to a select number of rows of ``V`` at a time, we have implemented a matrix type `OnDemandMatrix` which stores only the required rows (or columns) at a time. The `GivensUpDowndater` or `FullQRUpDowndater` will automatically delete unneeded rows/columns throughout the pruning procedure. 
 
+!!! warning "Do not use `fast_caratheodory` with on-demand arrays"
+    `fast_caratheodory` requires ordinary in-memory `V` and `w` arrays because
+    it allocates intermediate buffers and compacts rows in place. Use
+    `caratheodory_pruning` with an `OnDemandMatrix` and, when needed, an
+    `OnDemandVector` instead.
+
 ```@docs
 OnDemandMatrix
 ```

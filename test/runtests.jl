@@ -195,4 +195,22 @@ using LinearAlgebra: norm, I
         w, inds = caratheodory_pruning(V, w_in)
         @test norm(V * w_in .- V[:,inds] * w[inds]) <= tol
     end
+    @testset "Fast Caratheodory" begin
+        for T in (Float64, Float32, ComplexF64)
+            V = rand(T, 30, 4)
+            w = rand(T, size(V, 1))
+            w_pruned, inds = fast_caratheodory(V, w)
+
+            tol = T === Float32 ? 1f-5 : 1e-10
+            @test length(w_pruned) == length(w)
+            @test norm(transpose(V) * w - transpose(V) * w_pruned) ≤ tol
+            @test all(iszero, w_pruned[setdiff(eachindex(w_pruned), inds)])
+        end
+
+        V_ondemand = OnDemandMatrix(30, 4, _ -> rand(4), by=:rows)
+        w_ondemand = OnDemandVector(30, _ -> rand())
+        @test_throws ArgumentError fast_caratheodory(V_ondemand, w_ondemand)
+        @test_throws ArgumentError fast_caratheodory(V_ondemand, rand(30))
+        @test_throws ArgumentError fast_caratheodory(rand(30, 4), w_ondemand)
+    end
 end
