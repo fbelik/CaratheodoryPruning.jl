@@ -203,7 +203,7 @@ using LinearAlgebra: norm, I
 
             tol = T === Float32 ? 1f-5 : 1e-10
             @test length(w_pruned) == length(w)
-            @test norm(V' * w - V' * w_pruned) ≤ tol
+            @test norm(transpose(V) * w - transpose(V) * w_pruned) ≤ tol
             @test all(iszero, w_pruned[setdiff(eachindex(w_pruned), inds)])
         end
 
