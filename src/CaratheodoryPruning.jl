@@ -1,7 +1,7 @@
 module CaratheodoryPruning
 
 using LinearAlgebra: 
-    qr, svd, I, givens, lmul!, rmul!, ldiv!, rdiv!, QRCompactWYQ, norm, UpperTriangular, SingularException, pinv
+    qr, svd, I, givens, mul!, lmul!, rmul!, ldiv!, rdiv!, QRCompactWYQ, norm, UpperTriangular, SingularException, pinv
 using Random: randperm
 using ProgressBars: ProgressBar, update
 
@@ -13,6 +13,7 @@ include("kernel.jl")
 include("pruning_weights.jl")
 include("extra_pruning.jl")
 include("caratheodory.jl")
+include("fast_caratheodory.jl")
 
 export OnDemandMatrix
 export OnDemandVector
@@ -25,6 +26,7 @@ export GivensDowndater
 export FullQRUpDowndater
 export GivensUpDowndater
 export caratheodory_pruning
+export fast_caratheodory
 export get_inds
 export get_kernel_vectors
 export prune_weights_first!
